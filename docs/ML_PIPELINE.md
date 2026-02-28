@@ -55,12 +55,12 @@ This document describes the Machine Learning pipelines used in UtsukushiiAI for 
 
 ### Model Details
 
-| Property | Value |
-|----------|-------|
-| Architecture | YOLOv12 |
-| Training Data | Manga109 + Custom |
-| Input Size | 640x640 |
-| Output | Bounding boxes (x, y, width, height) |
+| Property      | Value                                |
+| ------------- | ------------------------------------ |
+| Architecture  | YOLOv12                              |
+| Training Data | Manga109 + Custom                    |
+| Input Size    | 640x640                              |
+| Output        | Bounding boxes (x, y, width, height) |
 
 ### Implementation
 
@@ -76,7 +76,7 @@ class YOLODetector:
         self.model = YOLO(model_path)
         self.device = device
         self.model.to(device)
-    
+
     def detect(self, image: Image.Image) -> List[Dict[str, Any]]:
         # Run inference
         results = self.model.predict(
@@ -86,7 +86,7 @@ class YOLODetector:
             device=self.device,
             verbose=False
         )
-        
+
         # Extract detections
         detections = []
         for result in results:
@@ -102,7 +102,7 @@ class YOLODetector:
                     "confidence": float(box.conf[0]),
                     "class": int(box.cls[0])
                 })
-        
+
         return detections
 ```
 
@@ -131,11 +131,11 @@ def normalize_bbox(xyxy: tuple, img_width: int, img_height: int) -> Dict[str, fl
 
 ### Model Details
 
-| Property | Value |
-|----------|-------|
+| Property     | Value                      |
+| ------------ | -------------------------- |
 | Architecture | SAM 2 (Segment Anything 2) |
-| Input | Image + Bounding boxes |
-| Output | Binary masks |
+| Input        | Image + Bounding boxes     |
+| Output       | Binary masks               |
 
 ### Implementation
 
@@ -161,7 +161,7 @@ class SAMSegmenter:
             stability_score_thresh=0.95
         )
         self.device = device
-    
+
     def segment_panel(self, image: Image.Image, bbox: Dict[str, float]) -> np.ndarray:
         # Convert normalized bbox to pixel coordinates
         w, h = image.size
@@ -169,13 +169,13 @@ class SAMSegmenter:
         y = int(bbox['y'] * h)
         bw = int(bbox['width'] * w)
         bh = int(bbox['height'] * h)
-        
+
         # Crop panel region
         panel_img = image.crop((x, y, x + bw, y + bh))
-        
+
         # Generate masks
         masks = self.mask_generator.generate(panel_img)
-        
+
         # Return combined mask (largest mask = main character)
         if masks:
             combined_mask = np.zeros((bh, bw), dtype=np.uint8)
@@ -183,7 +183,7 @@ class SAMSegmenter:
                 mask = mask_data['segmentation']
                 combined_mask = np.logical_or(combined_mask, mask).astype(np.uint8)
             return combined_mask
-        
+
         return np.zeros((bh, bw), dtype=np.uint8)
 ```
 
@@ -197,11 +197,11 @@ class SAMSegmenter:
 
 ### Model Details
 
-| Property | Value |
-|----------|-------|
+| Property     | Value                |
+| ------------ | -------------------- |
 | Architecture | MiDaS v3 (DPT-Large) |
-| Input | RGB Image (384x384) |
-| Output | Depth map (H x W) |
+| Input        | RGB Image (384x384)  |
+| Output       | Depth map (H x W)    |
 
 ### Implementation
 
@@ -218,42 +218,42 @@ class MiDaSEstimator:
         self.model.eval()
         self.model.to(device)
         self.device = device
-        
+
         self.transform = Compose([
             Resize((384, 384)),
             ToTensor(),
             Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
-    
+
     def estimate_depth(self, image: Image.Image) -> np.ndarray:
         # Preprocess
         input_tensor = self.transform(image).unsqueeze(0).to(self.device)
-        
+
         # Inference
         with torch.no_grad():
             depth = self.model(input_tensor)
-        
+
         # Postprocess
         depth = depth.squeeze().cpu().numpy()
         depth = (depth - depth.min()) / (depth.max() - depth.min())
-        
+
         return (depth * 255).astype(np.uint8)
-    
+
     def create_parallax_offset(self, depth_map: np.ndarray, strength: float) -> np.ndarray:
         """Create pixel offset map for parallax effect."""
         h, w = depth_map.shape
-        
+
         # Create coordinate grids
         y_coords, x_coords = np.meshgrid(
             np.linspace(-1, 1, h),
             np.linspace(-1, 1, w)
         )
-        
+
         # Calculate offsets based on depth
         # Closer objects move more than distant ones
         offset_x = (1 - depth_map) * strength * x_coords * w
         offset_y = (1 - depth_map) * strength * y_coords * h
-        
+
         return np.stack([offset_x, offset_y], axis=-1)
 ```
 
@@ -276,25 +276,25 @@ from typing import List, Dict
 class AudioAnalyzer:
     def __init__(self):
         self.sample_rate = 22050
-    
+
     def analyze(self, audio_path: str) -> Dict[str, any]:
         # Load audio
         y, sr = librosa.load(audio_path, sr=self.sample_rate)
-        
+
         # Get BPM
         tempo, beats = librosa.beat.beat_track(y=y, sr=sr)
-        
+
         # Get beat timestamps
         beat_times = librosa.frames_to_time(beats, sr=sr)
-        
+
         # Get onsets
         onset_env = librosa.onset.onset_strength(y=y, sr=sr)
         onset_frames = librosa.onset.onset_detect(onset_env=onset_env, sr=sr)
         onset_times = librosa.frames_to_time(onset_frames, sr=sr)
-        
+
         # Get segments
         segments = self._get_segments(y, sr)
-        
+
         return {
             "duration": librosa.get_duration(y=y, sr=sr),
             "bpm": float(tempo),
@@ -302,7 +302,7 @@ class AudioAnalyzer:
             "onsets": self._format_onsets(onset_times, onset_env),
             "segments": segments
         }
-    
+
     def _format_beats(self, beat_times: np.ndarray) -> List[Dict]:
         beats = []
         for i, time in enumerate(beat_times):
@@ -313,7 +313,7 @@ class AudioAnalyzer:
                 "type": "downbeat" if i % 4 == 0 else "beat"
             })
         return beats
-    
+
     def _format_onsets(self, onset_times: np.ndarray, onset_env: np.ndarray) -> List[Dict]:
         onsets = []
         for time in onset_times:
@@ -324,15 +324,15 @@ class AudioAnalyzer:
                 "strength": strength
             })
         return onsets
-    
+
     def _get_segments(self, y: np.ndarray, sr: int) -> List[Dict]:
         # Simple segment detection based on energy
         S = np.abs(librosa.stft(y))
         segment_boundaries = librosa.segment.agglomerate(S, k=8)
         segment_times = librosa.frames_to_time(segment_boundaries, sr=sr)
-        
+
         labels = ['intro', 'verse', 'chorus', 'bridge', 'verse', 'chorus', 'outro', 'break']
-        
+
         segments = []
         for i, (start, end) in enumerate(zip(segment_times[:-1], segment_times[1:])):
             segments.append({
@@ -340,7 +340,7 @@ class AudioAnalyzer:
                 "end": float(end),
                 "label": labels[i % len(labels)]
             })
-        
+
         return segments
 ```
 
@@ -371,16 +371,16 @@ class SVDAnimator:
         self.pipe.enable_model_cpu_offload()
         self.pipe.enable_vae_slicing()
         self.device = device
-    
+
     def animate_character(
-        self, 
-        character_image: Image.Image, 
+        self,
+        character_image: Image.Image,
         motion_prompt: str = "subtle movement",
         num_frames: int = 24
     ) -> List[Image.Image]:
         # Resize to model's expected input
         character_image = character_image.resize((576, 576))
-        
+
         # Generate video frames
         frames = self.pipe(
             character_image,
@@ -389,29 +389,29 @@ class SVDAnimator:
             num_inference_steps=25,
             guidance_scale=1.0,
         ).frames[0]
-        
+
         return frames
-    
+
     def apply_subtle_effect(
-        self, 
-        image: Image.Image, 
+        self,
+        image: Image.Image,
         effect_type: str = "pulse"
     ) -> List[Image.Image]:
         """Apply subtle animation effects."""
         frames = []
-        
+
         if effect_type == "pulse":
             for i in range(10):
                 scale = 1.0 + 0.02 * np.sin(i * np.pi / 5)
                 w, h = image.size
                 new_size = (int(w * scale), int(h * scale))
                 scaled = image.resize(new_size)
-                
+
                 # Center crop to original size
                 left = (new_size[0] - w) // 2
                 top = (new_size[1] - h) // 2
                 frames.append(scaled.crop((left, top, left + w, top + h)))
-        
+
         elif effect_type == "breath":
             for i in range(20):
                 scale = 1.0 + 0.01 * np.sin(i * np.pi / 10)
@@ -420,7 +420,7 @@ class SVDAnimator:
                 offset = (h - new_h) // 2
                 scaled = image.resize((w, new_h))
                 frames.append(scaled.crop((0, offset, w, offset + h)))
-        
+
         return frames
 ```
 
@@ -446,7 +446,7 @@ class VideoComposer:
     def __init__(self, output_dir: str = "output"):
         self.output_dir = output_dir
         os.makedirs(output_dir, exist_ok=True)
-    
+
     def compose(
         self,
         panels: List[Dict],
@@ -456,10 +456,10 @@ class VideoComposer:
         progress_callback: callable = None
     ) -> str:
         output_path = os.path.join(self.output_dir, "output.mp4")
-        
+
         # Create filter complex for FFmpeg
         filter_complex = self._build_filter_complex(panels, beats, settings)
-        
+
         # FFmpeg command
         cmd = [
             "ffmpeg",
@@ -474,38 +474,38 @@ class VideoComposer:
             "-b:a", "192k",
             output_path
         ]
-        
+
         subprocess.run(cmd, check=True)
-        
+
         return output_path
-    
+
     def _build_filter_complex(
-        self, 
-        panels: List[Dict], 
+        self,
+        panels: List[Dict],
         beats: List[Dict],
         settings: RenderSettings
     ) -> str:
         filters = []
-        
+
         for i, panel in enumerate(panels):
             # Add parallax effect
             if settings.effects.get('parallax'):
                 filters.append(
                     f"[{i}:v]crop=iw*0.8:ih*0.8,zoompan=z='min(zoom+0.001,1.5)':d=25:s=1080x1920[par{i}]"
                 )
-            
+
             # Add glow effect
             if settings.effects.get('glow'):
                 filters.append(
                     f"[par{i}]gblur=sigma=5:enable='between(t,{beats[i]['timestamp']},{beats[i]['timestamp']+0.5})'[glow{i}]"
                 )
-        
+
         # Chain filters
         if len(filters) > 1:
             return ";".join(filters[:-1]) + f";{filters[-1]}[out]"
-        
+
         return filters[0] if filters else ""
-    
+
     def _get_preset(self, quality: str) -> str:
         presets = {
             "draft": "ultrafast",
@@ -514,7 +514,7 @@ class VideoComposer:
             "ultra": "veryslow"
         }
         return presets.get(quality, "medium")
-    
+
     def _get_crf(self, quality: str) -> int:
         crf_values = {
             "draft": 35,
@@ -549,7 +549,7 @@ class RenderPipeline:
         self.animator = animator
         self.audio_analyzer = audio_analyzer
         self.composer = composer
-    
+
     async def execute(
         self,
         project_id: str,
@@ -561,37 +561,37 @@ class RenderPipeline:
         # Stage 1: Detect panels
         progress_callback(0, "detecting", "Detecting manga panels...")
         panels = await self._detect_panels(manga_path)
-        
+
         # Stage 2: Generate masks
         progress_callback(20, "segmenting", "Generating character masks...")
         masks = await self._generate_masks(manga_path, panels)
-        
+
         # Stage 3: Estimate depth
         progress_callback(40, "depth", "Creating depth maps...")
         depth_maps = await self._estimate_depth(manga_path, panels)
-        
+
         # Stage 4: Analyze audio
         progress_callback(50, "analyzing", "Analyzing audio beats...")
         audio_analysis = await self._analyze_audio(audio_path)
-        
+
         # Stage 5: Animate characters
         progress_callback(60, "animating", "Animating characters...")
         animated_frames = await self._animate_characters(masks)
-        
+
         # Stage 6: Compose video
         progress_callback(80, "composing", "Composing video...")
         output_path = await self._compose_video(
             panels, animated_frames, depth_maps, audio_analysis, audio_path, settings
         )
-        
-        # Stage 7: Upload
-        progress_callback(95, "uploading", "Uploading to storage...")
-        output_url = await self._upload_to_s3(output_path, project_id)
-        
+
+        # Stage 7: Save to Storage
+        progress_callback(95, "uploading", "Saving to local storage...")
+        output_url = await self._save_to_local(output_path, project_id)
+
         progress_callback(100, "complete", "Render complete!")
-        
+
         return output_url
-    
+
     async def _detect_panels(self, manga_path: str) -> List[Dict]:
         image = Image.open(manga_path)
         detections = self.detector.detect(image)
@@ -640,14 +640,14 @@ def download_models():
         filename="yolov12-manga.pt",
         local_dir="models/yolov12/manga"
     )
-    
+
     # SAM 2
     hf_hub_download(
         repo_id="facebook/sam2.1-hiera-base-plus",
         filename="sam2.1_hiera_base_plus.pt",
         local_dir="models/sam2"
     )
-    
+
     # MiDaS
     hf_hub_download(
         repo_id="intel/dpt-large",

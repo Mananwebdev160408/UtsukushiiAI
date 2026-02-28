@@ -140,11 +140,11 @@ git checkout -b refactor/improvement-name
 ```typescript
 // ✅ Good
 const userProjects = projects.filter(
-  (project) => project.userId === currentUser.id
+  (project) => project.userId === currentUser.id,
 );
 
 // ❌ Bad
-const p = projects.filter(p => p.uid === u.id);
+const p = projects.filter((p) => p.uid === u.id);
 ```
 
 #### Python
@@ -204,23 +204,28 @@ chore: update dependencies
 
 ```markdown
 ## Description
+
 Brief description of the changes
 
 ## Type of Change
+
 - [ ] Bug fix
 - [ ] New feature
 - [ ] Breaking change
 - [ ] Documentation update
 
 ## Testing
+
 - [ ] Unit tests added/updated
 - [ ] Integration tests pass
 - [ ] Manual testing performed
 
 ## Screenshots
+
 (if applicable)
 
 ## Checklist
+
 - [ ] My code follows the style guidelines
 - [ ] I have performed a self-review
 - [ ] I have commented complex code
@@ -251,15 +256,15 @@ Brief description of the changes
 
 ### Types
 
-| Type | Description |
-|------|-------------|
-| `feat` | New feature |
-| `fix` | Bug fix |
-| `docs` | Documentation |
-| `style` | Formatting |
+| Type       | Description      |
+| ---------- | ---------------- |
+| `feat`     | New feature      |
+| `fix`      | Bug fix          |
+| `docs`     | Documentation    |
+| `style`    | Formatting       |
 | `refactor` | Code refactoring |
-| `test` | Tests |
-| `chore` | Maintenance |
+| `test`     | Tests            |
+| `chore`    | Maintenance      |
 
 ### Examples
 
@@ -286,17 +291,17 @@ BREAKING CHANGE: Refresh tokens are now JWT instead of opaque"
 
 ```typescript
 // Example test
-describe('ProjectService', () => {
-  it('should create a project', async () => {
-    const service = new ProjectService(mockRepo, mockS3);
-    
+describe("ProjectService", () => {
+  it("should create a project", async () => {
+    const service = new ProjectService(mockRepo, mockStorage);
+
     const project = await service.create({
-      title: 'Test Project',
-      aspectRatio: '9:16'
+      title: "Test Project",
+      aspectRatio: "9:16",
     });
-    
+
     expect(project.id).toBeDefined();
-    expect(project.title).toBe('Test Project');
+    expect(project.title).toBe("Test Project");
   });
 });
 ```
@@ -329,15 +334,15 @@ npm run test --workspace=@utsukushii/api
 
 ### Code Documentation
 
-```typescript
+````typescript
 /**
  * Creates a new project for the user.
- * 
+ *
  * @param userId - The ID of the user creating the project
  * @param data - Project creation data
  * @returns The created project
  * @throws {ValidationError} If project data is invalid
- * 
+ *
  * @example
  * ```typescript
  * const project = await projectService.create('user-123', {
@@ -348,11 +353,11 @@ npm run test --workspace=@utsukushii/api
  */
 async function createProject(
   userId: string,
-  data: CreateProjectDTO
+  data: CreateProjectDTO,
 ): Promise<Project> {
   // Implementation
 }
-```
+````
 
 ### README Updates
 

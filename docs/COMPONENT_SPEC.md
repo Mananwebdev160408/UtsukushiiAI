@@ -65,26 +65,22 @@ src/components/
 
 ```typescript
 interface ButtonProps {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
-  size?: 'sm' | 'md' | 'lg';
+  variant?: "primary" | "secondary" | "ghost" | "danger";
+  size?: "sm" | "md" | "lg";
   isLoading?: boolean;
   isDisabled?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
   children: React.ReactNode;
   onClick?: () => void;
-  type?: 'button' | 'submit' | 'reset';
+  type?: "button" | "submit" | "reset";
 }
 ```
 
 **Usage**:
 
 ```tsx
-<Button 
-  variant="primary" 
-  size="md"
-  onClick={handleClick}
->
+<Button variant="primary" size="md" onClick={handleClick}>
   Create Project
 </Button>
 ```
@@ -100,7 +96,7 @@ interface InputProps {
   helperText?: string;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
-  type?: 'text' | 'email' | 'password' | 'number' | 'search';
+  type?: "text" | "email" | "password" | "number" | "search";
   placeholder?: string;
   value?: string;
   onChange?: (value: string) => void;
@@ -118,7 +114,7 @@ interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
+  size?: "sm" | "md" | "lg" | "xl" | "full";
   closeOnOverlayClick?: boolean;
   closeOnEscape?: boolean;
   children: React.ReactNode;
@@ -146,6 +142,7 @@ interface MangaUploaderProps {
 ```
 
 **States**:
+
 - `idle`: Ready to upload
 - `uploading`: File being uploaded with progress
 - `processing`: ML detection in progress
@@ -153,6 +150,7 @@ interface MangaUploaderProps {
 - `error`: Upload or processing failed
 
 **Features**:
+
 - Drag-and-drop PDF, PNG, JPG files
 - Progress indicator for upload
 - Automatic panel detection preview
@@ -171,6 +169,7 @@ interface AudioUploaderProps {
 ```
 
 **Features**:
+
 - Drag-and-drop MP3, WAV files
 - Waveform visualization preview
 - Auto BPM detection display
@@ -188,6 +187,7 @@ interface YouTubeDownloaderProps {
 ```
 
 **Features**:
+
 - YouTube URL input with validation
 - Download progress indicator
 - Audio preview after download
@@ -214,6 +214,7 @@ interface CanvasProps {
 ```
 
 **Features**:
+
 - Pan and zoom controls
 - Grid overlay toggle
 - Zoom to fit / 100% / custom zoom
@@ -237,6 +238,7 @@ interface BoundingBoxProps {
 ```
 
 **Features**:
+
 - Draggable positioning
 - Resize handles on corners and edges
 - Lock/unlock panel
@@ -259,6 +261,7 @@ interface LayerManagerProps {
 ```
 
 **Features**:
+
 - Layer list with thumbnails
 - Drag-and-drop reordering
 - Visibility toggle
@@ -282,7 +285,7 @@ interface CanvasToolbarProps {
   onToggleGrid: () => void;
 }
 
-type CanvasTool = 'select' | 'pan' | 'draw' | 'erase';
+type CanvasTool = "select" | "pan" | "draw" | "erase";
 ```
 
 ---
@@ -307,6 +310,7 @@ interface TimelineProps {
 ```
 
 **Features**:
+
 - Horizontal scrollable timeline
 - Time ruler with markers
 - Panel tracks
@@ -329,6 +333,7 @@ interface WaveformProps {
 ```
 
 **Features**:
+
 - Audio waveform visualization
 - Click to seek
 - Beat markers overlay
@@ -384,6 +389,7 @@ interface RenderPanelProps {
 ```
 
 **Features**:
+
 - Quality selector (Draft/Standard/High/Ultra)
 - Resolution selector
 - Effect toggles (Glow, Glitch, Parallax)
@@ -403,12 +409,14 @@ interface RenderProgressProps {
 ```
 
 **States**:
+
 - `queued`: Shows queue position
 - `processing`: Shows stage and progress
 - `completed`: Shows download link
 - `failed`: Shows error and retry button
 
 **Progress Stages**:
+
 1. `downloading` - Downloading assets
 2. `detecting` - Detecting panels (0-20%)
 3. `segmenting` - Generating masks (20-40%)
@@ -416,7 +424,7 @@ interface RenderProgressProps {
 5. `animating` - Animating characters (50-70%)
 6. `analyzing` - Analyzing audio (70-80%)
 7. `composing` - Composing video (80-95%)
-8. `uploading` - Uploading to S3 (95-100%)
+8. `uploading` - Uploading to Local Storage (95-100%)
 
 ---
 
@@ -428,17 +436,14 @@ Pure UI components that receive props and render UI:
 
 ```tsx
 // components/ui/Button/Button.tsx
-export function Button({ 
-  variant = 'primary', 
-  size = 'md', 
-  children, 
-  ...props 
+export function Button({
+  variant = "primary",
+  size = "md",
+  children,
+  ...props
 }: ButtonProps) {
   return (
-    <button 
-      className={cn('btn', `btn-${variant}`, `btn-${size}`)}
-      {...props}
-    >
+    <button className={cn("btn", `btn-${variant}`, `btn-${size}`)} {...props}>
       {children}
     </button>
   );
@@ -451,20 +456,20 @@ Components that connect to stores and handle data:
 
 ```tsx
 // components/project/ProjectList.tsx
-'use client';
+"use client";
 
 export function ProjectList() {
   const { projects, isLoading, fetchProjects } = useProjectStore();
-  
+
   useEffect(() => {
     fetchProjects();
   }, [fetchProjects]);
-  
+
   if (isLoading) return <Skeleton />;
-  
+
   return (
     <div className="project-list">
-      {projects.map(project => (
+      {projects.map((project) => (
         <ProjectCard key={project.id} project={project} />
       ))}
     </div>
@@ -490,7 +495,11 @@ export function Modal({ isOpen, onClose, children }: ModalProps) {
   );
 }
 
-Modal.Header = function ModalHeader({ children }: { children: React.ReactNode }) {
+Modal.Header = function ModalHeader({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { onClose } = useContext(ModalContext);
   return (
     <Dialog.Title>
@@ -500,11 +509,19 @@ Modal.Header = function ModalHeader({ children }: { children: React.ReactNode })
   );
 };
 
-Modal.Content = function ModalContent({ children }: { children: React.ReactNode }) {
+Modal.Content = function ModalContent({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return <Dialog.Description>{children}</Dialog.Description>;
 };
 
-Modal.Footer = function ModalFooter({ children }: { children: React.ReactNode }) {
+Modal.Footer = function ModalFooter({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return <div className="modal-footer">{children}</div>;
 };
 ```
@@ -525,13 +542,13 @@ interface ProjectStore {
   panels: Panel[];
   isLoading: boolean;
   error: string | null;
-  
+
   // Actions
   fetchProject: (id: string) => Promise<void>;
   createProject: (data: CreateProjectDTO) => Promise<Project>;
   updateProject: (id: string, data: UpdateProjectDTO) => Promise<void>;
   deleteProject: (id: string) => Promise<void>;
-  
+
   // Panel Actions
   addPanel: (panel: Panel) => void;
   updatePanel: (id: string, updates: Partial<Panel>) => void;
@@ -552,7 +569,7 @@ interface CanvasStore {
   tool: CanvasTool;
   showGrid: boolean;
   isDrawing: boolean;
-  
+
   // Actions
   setZoom: (zoom: number) => void;
   setPan: (pan: { x: number; y: number }) => void;
@@ -574,7 +591,7 @@ interface TimelineStore {
   beats: BeatMarker[];
   selectedBeatId: string | null;
   zoom: number;
-  
+
   // Actions
   setCurrentTime: (time: number) => void;
   play: () => void;
@@ -595,7 +612,7 @@ interface RenderStore {
   currentJob: RenderJob | null;
   jobs: RenderJob[];
   isPolling: boolean;
-  
+
   // Actions
   startRender: (projectId: string, settings: RenderSettings) => Promise<void>;
   cancelRender: (jobId: string) => Promise<void>;
@@ -614,13 +631,13 @@ interface RenderStore {
 // hooks/useProject.ts
 export const useProject = (projectId: string) => {
   const store = useProjectStore();
-  
+
   useEffect(() => {
     if (projectId) {
       store.fetchProject(projectId);
     }
   }, [projectId, store.fetchProject]);
-  
+
   return {
     project: store.project,
     panels: store.panels,
@@ -638,12 +655,14 @@ export const useProject = (projectId: string) => {
 export const useCanvas = () => {
   const canvasStore = useCanvasStore();
   const projectStore = useProjectStore();
-  
+
   const selectedPanel = useMemo(() => {
     if (!canvasStore.selectedPanelId) return null;
-    return projectStore.panels.find(p => p.id === canvasStore.selectedPanelId);
+    return projectStore.panels.find(
+      (p) => p.id === canvasStore.selectedPanelId,
+    );
   }, [canvasStore.selectedPanelId, projectStore.panels]);
-  
+
   return {
     ...canvasStore,
     selectedPanel,
@@ -663,33 +682,33 @@ export const useCanvas = () => {
 export const useRender = () => {
   const renderStore = useRenderStore();
   const [socket, setSocket] = useState<Socket | null>(null);
-  
+
   useEffect(() => {
-    const newSocket = io('/render', {
-      auth: { token: getAccessToken() }
+    const newSocket = io("/render", {
+      auth: { token: getAccessToken() },
     });
-    
-    newSocket.on('connect', () => {
+
+    newSocket.on("connect", () => {
       if (renderStore.currentJob) {
-        newSocket.emit('join', renderStore.currentJob.projectId);
+        newSocket.emit("join", renderStore.currentJob.projectId);
       }
     });
-    
-    newSocket.on('render:progress', (data) => {
+
+    newSocket.on("render:progress", (data) => {
       renderStore.updateProgress(data);
     });
-    
-    newSocket.on('render:complete', (data) => {
+
+    newSocket.on("render:complete", (data) => {
       renderStore.setCompleted(data);
     });
-    
+
     setSocket(newSocket);
-    
+
     return () => {
       newSocket.disconnect();
     };
   }, []);
-  
+
   return {
     ...renderStore,
     socket,
@@ -706,7 +725,7 @@ export const useRender = () => {
 Use Framer Motion for UI animations:
 
 ```tsx
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from "framer-motion";
 
 export function FadeIn({ children }: { children: React.ReactNode }) {
   return (
@@ -721,7 +740,13 @@ export function FadeIn({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function Modal({ isOpen, children }: { isOpen: boolean; children: React.ReactNode }) {
+export function Modal({
+  isOpen,
+  children,
+}: {
+  isOpen: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <AnimatePresence>
       {isOpen && (
@@ -745,7 +770,7 @@ For canvas-specific animations, use `requestAnimationFrame`:
 ```typescript
 function useCanvasAnimation(panel: Panel) {
   const [animatedPanel, setAnimatedPanel] = useState(panel);
-  
+
   useAnimationFrame((time) => {
     if (panel.effects.parallax > 0) {
       const offset = Math.sin(time / 1000) * panel.effects.parallax * 0.01;
@@ -753,12 +778,12 @@ function useCanvasAnimation(panel: Panel) {
         ...panel,
         bbox: {
           ...panel.bbox,
-          y: panel.bbox.y + offset
-        }
+          y: panel.bbox.y + offset,
+        },
       });
     }
   });
-  
+
   return animatedPanel;
 }
 ```
@@ -770,11 +795,7 @@ function useCanvasAnimation(panel: Panel) {
 ### ARIA Labels
 
 ```tsx
-<button 
-  aria-label="Zoom in"
-  aria-describedby="zoom-tooltip"
-  onClick={onZoomIn}
->
+<button aria-label="Zoom in" aria-describedby="zoom-tooltip" onClick={onZoomIn}>
   <ZoomInIcon />
 </button>
 ```
@@ -789,7 +810,7 @@ function BoundingBox({ bbox, onSelect }: BoundingBoxProps) {
       tabIndex={0}
       onClick={onSelect}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
+        if (e.key === "Enter" || e.key === " ") {
           onSelect();
         }
       }}
@@ -805,19 +826,15 @@ function BoundingBox({ bbox, onSelect }: BoundingBoxProps) {
 ```tsx
 function Modal({ isOpen, onClose, children }: ModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
-  
+
   useEffect(() => {
     if (isOpen) {
       dialogRef.current?.focus();
     }
   }, [isOpen]);
-  
+
   return (
-    <Dialog 
-      ref={dialogRef}
-      aria-modal="true"
-      onClose={onClose}
-    >
+    <Dialog ref={dialogRef} aria-modal="true" onClose={onClose}>
       {children}
     </Dialog>
   );
@@ -831,8 +848,8 @@ function Modal({ isOpen, onClose, children }: ModalProps) {
 ### Code Splitting
 
 ```tsx
-const LazyCanvas = lazy(() => import('./canvas/Canvas'));
-const LazyTimeline = lazy(() => import('./timeline/Timeline'));
+const LazyCanvas = lazy(() => import("./canvas/Canvas"));
+const LazyTimeline = lazy(() => import("./timeline/Timeline"));
 
 function ProjectEditor() {
   return (
@@ -847,18 +864,21 @@ function ProjectEditor() {
 ### Memoization
 
 ```tsx
-const PanelCard = memo(function PanelCard({ panel, isSelected, onSelect }: PanelCardProps) {
-  return (
-    <div 
-      className={isSelected ? 'selected' : ''}
-      onClick={() => onSelect(panel.id)}
-    >
-      {panel.title}
-    </div>
-  );
-}, (prev, next) => {
-  return prev.panel === next.panel && prev.isSelected === next.isSelected;
-});
+const PanelCard = memo(
+  function PanelCard({ panel, isSelected, onSelect }: PanelCardProps) {
+    return (
+      <div
+        className={isSelected ? "selected" : ""}
+        onClick={() => onSelect(panel.id)}
+      >
+        {panel.title}
+      </div>
+    );
+  },
+  (prev, next) => {
+    return prev.panel === next.panel && prev.isSelected === next.isSelected;
+  },
+);
 ```
 
 ### Virtualization
@@ -866,21 +886,13 @@ const PanelCard = memo(function PanelCard({ panel, isSelected, onSelect }: Panel
 For long lists of panels:
 
 ```tsx
-import { FixedSizeList } from 'react-window';
+import { FixedSizeList } from "react-window";
 
 function PanelList({ panels, onSelect }: PanelListProps) {
   return (
-    <FixedSizeList
-      height={400}
-      itemCount={panels.length}
-      itemSize={60}
-    >
+    <FixedSizeList height={400} itemCount={panels.length} itemSize={60}>
       {({ index, style }) => (
-        <PanelCard 
-          style={style}
-          panel={panels[index]}
-          onSelect={onSelect}
-        />
+        <PanelCard style={style} panel={panels[index]} onSelect={onSelect} />
       )}
     </FixedSizeList>
   );

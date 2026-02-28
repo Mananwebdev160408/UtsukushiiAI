@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 #### Core Features
+
 - **Project Management**: Create, edit, delete manga projects
 - **Panel Detection**: Automatic manga panel detection using YOLOv12
 - **Panel Segmentation**: Character/foreground segmentation using SAM 2
@@ -21,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **User Authentication**: JWT-based authentication system
 
 #### Frontend
+
 - **Next.js 15 App Router**: Modern React framework with Server Components
 - **Zustand State Management**: Lightweight state management
 - **Canvas Editor**: Interactive panel bounding box editing
@@ -29,20 +31,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **YouTube Downloader**: Direct audio download from YouTube
 
 #### Backend
+
 - **Express.js API**: RESTful API with Express
 - **FastAPI ML Worker**: Async ML inference endpoints
 - **MongoDB Integration**: Full CRUD operations
 - **Redis Caching**: Session and render queue caching
-- **AWS S3 Integration**: File upload and storage
+- **Local Storage Integration**: File upload and storage (replacing AWS S3)
 
 ### Changed
 
 #### Architecture
+
 - Separated ML processing to dedicated FastAPI worker
 - Implemented WebSocket for real-time updates
 - Added render job queue with Redis
 
 #### Performance
+
 - Optimized YOLOv12 inference with batch processing
 - Added GPU support for ML worker
 - Implemented lazy loading for models
@@ -84,11 +89,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
-| Version | Date | Status |
-|---------|------|--------|
-| 1.0.0 | 2024-03-15 | Production |
-| 0.9.0 | 2024-02-01 | Beta |
-| 0.5.0 | 2024-01-15 | Alpha |
+| Version | Date       | Status     |
+| ------- | ---------- | ---------- |
+| 1.0.0   | 2024-03-15 | Production |
+| 0.9.0   | 2024-02-01 | Beta       |
+| 0.5.0   | 2024-01-15 | Alpha      |
 
 ---
 
@@ -130,11 +135,11 @@ docker-compose up -d
 
 ### Deprecated in 1.0.0
 
-| Feature | Deprecated | Removed |
-|---------|------------|---------|
-| REST auth endpoints | 1.0.0 | 2.0.0 |
-| JWT-only refresh | 1.0.0 | 2.0.0 |
-| PNG panel format | 1.0.0 | 1.1.0 |
+| Feature             | Deprecated | Removed |
+| ------------------- | ---------- | ------- |
+| REST auth endpoints | 1.0.0      | 2.0.0   |
+| JWT-only refresh    | 1.0.0      | 2.0.0   |
+| PNG panel format    | 1.0.0      | 1.1.0   |
 
 ### Planned for 1.1.0
 
@@ -171,4 +176,4 @@ Thank you to all contributors who have helped shape UtsukushiiAI!
 
 ---
 
-*This changelog was generated using [GitHub Changelog Generator](https://github.com/github-changelog-generator/github-changelog-generator).*
+_This changelog was generated using [GitHub Changelog Generator](https://github.com/github-changelog-generator/github-changelog-generator)._

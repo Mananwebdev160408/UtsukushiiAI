@@ -41,16 +41,16 @@ class ProjectController {
   async create(req, res) {
     // Validation
     const project = this.validate(req.body);
-    
+
     // Database operation
     const saved = await this.projectRepo.save(project);
-    
+
     // Email notification
     await this.emailService.sendProjectCreated(saved);
-    
+
     // Logging
-    this.logger.info('Project created');
-    
+    this.logger.info("Project created");
+
     res.json(saved);
   }
 }
@@ -63,13 +63,16 @@ class ProjectController {
 class ProjectController {
   constructor(
     private projectService: IProjectService,
-    private validationMiddleware: ValidationMiddleware
+    private validationMiddleware: ValidationMiddleware,
   ) {}
 
-  @route.post('/projects')
+  @route.post("/projects")
   @middleware(this.validationMiddleware.validate(CreateProjectSchema))
   async create(req: Request, res: Response) {
-    const project = await this.projectService.createProject(req.user.id, req.body);
+    const project = await this.projectService.createProject(
+      req.user.id,
+      req.body,
+    );
     res.status(201).json(project);
   }
 }
@@ -79,12 +82,15 @@ class ProjectService implements IProjectService {
   constructor(
     private projectRepository: IProjectRepository,
     private notificationService: INotificationService,
-    private logger: ILogger
+    private logger: ILogger,
   ) {}
 
-  async createProject(userId: string, data: CreateProjectDTO): Promise<Project> {
+  async createProject(
+    userId: string,
+    data: CreateProjectDTO,
+  ): Promise<Project> {
     const project = await this.projectRepository.create({ ...data, userId });
-    this.logger.info('Project created', { projectId: project.id });
+    this.logger.info("Project created", { projectId: project.id });
     await this.notificationService.notifyProjectCreated(project);
     return project;
   }
@@ -93,7 +99,7 @@ class ProjectService implements IProjectService {
 // Repository: Data access only
 class ProjectRepository implements IProjectRepository {
   async create(data: CreateProjectDTO): Promise<Project> {
-    return this.db.collection('projects').insertOne(data);
+    return this.db.collection("projects").insertOne(data);
   }
 }
 ```
@@ -121,11 +127,11 @@ Use strategies, plugins, and inheritance to extend behavior without modifying ex
 ```typescript
 class RenderService {
   async render(projectId: string, settings: RenderSettings) {
-    if (settings.format === 'mp4') {
+    if (settings.format === "mp4") {
       // MP4 rendering logic
-    } else if (settings.format === 'webm') {
+    } else if (settings.format === "webm") {
       // WebM rendering logic
-    } else if (settings.format === 'gif') {
+    } else if (settings.format === "gif") {
       // GIF rendering logic
     }
     // Every new format requires modifying this method!
@@ -144,19 +150,19 @@ interface RenderStrategy {
 // Concrete Strategies
 class MP4RenderStrategy implements RenderStrategy {
   async render(frames: Frame[], settings: RenderSettings): Promise<Buffer> {
-    return ffmpeg.render(frames, { codec: 'h264', format: 'mp4' });
+    return ffmpeg.render(frames, { codec: "h264", format: "mp4" });
   }
 }
 
 class WebMRenderStrategy implements RenderStrategy {
   async render(frames: Frame[], settings: RenderSettings): Promise<Buffer> {
-    return ffmpeg.render(frames, { codec: 'vp9', format: 'webm' });
+    return ffmpeg.render(frames, { codec: "vp9", format: "webm" });
   }
 }
 
 class GIFRenderStrategy implements RenderStrategy {
   async render(frames: Frame[], settings: RenderSettings): Promise<Buffer> {
-    return ffmpeg.render(frames, { format: 'gif' });
+    return ffmpeg.render(frames, { format: "gif" });
   }
 }
 
@@ -195,11 +201,11 @@ class RenderService {
 // Adding a new format doesn't require modifying existing code
 class AV1RenderStrategy implements RenderStrategy {
   async render(frames: Frame[], settings: RenderSettings): Promise<Buffer> {
-    return ffmpeg.render(frames, { codec: 'av1', format: 'mp4' });
+    return ffmpeg.render(frames, { codec: "av1", format: "mp4" });
   }
 }
 
-strategyFactory.register('av1', new AV1RenderStrategy());
+strategyFactory.register("av1", new AV1RenderStrategy());
 ```
 
 ---
@@ -219,7 +225,7 @@ class BaseRepository {
   findById(id: string): Promise<Entity | null> {
     return this.db.find(id);
   }
-  
+
   findAll(limit: number = 100): Promise<Entity[]> {
     return this.db.findMany({ limit });
   }
@@ -227,7 +233,8 @@ class BaseRepository {
 
 class UserRepository extends BaseRepository {
   // LSP Violation: Returns empty array instead of null
-  findById(id: string): Promise<User[] | null> {  // Different return type!
+  findById(id: string): Promise<User[] | null> {
+    // Different return type!
     return this.db.findMany({ where: { id }, limit: 1 });
   }
 }
@@ -246,23 +253,23 @@ interface IRepository<T> {
 
 class BaseRepository<T> implements IRepository<T> {
   constructor(protected db: Database) {}
-  
+
   async findById(id: string): Promise<T | null> {
     return this.db.collection.findOne({ _id: id });
   }
-  
+
   async findAll(limit: number = 100): Promise<T[]> {
     return this.db.collection.findMany({}).limit(limit).toArray();
   }
-  
+
   async create(data: Partial<T>): Promise<T> {
     return this.db.collection.insertOne(data);
   }
-  
+
   async update(id: string, data: Partial<T>): Promise<T> {
     return this.db.collection.findOneAndUpdate({ _id: id }, { $set: data });
   }
-  
+
   async delete(id: string): Promise<void> {
     await this.db.collection.deleteOne({ _id: id });
   }
@@ -272,7 +279,7 @@ class UserRepository extends BaseRepository<User> {
   async findByEmail(email: string): Promise<User | null> {
     return this.db.collection.findOne({ email });
   }
-  
+
   async findByRole(role: string): Promise<User[]> {
     return this.db.collection.findMany({ role });
   }
@@ -289,10 +296,10 @@ interface IPipeline {
 
 abstract class BasePipeline implements IPipeline {
   abstract execute(input: PipelineInput): Promise<PipelineOutput>;
-  
+
   validate(input: PipelineInput): ValidationResult {
     if (!input.imageUrl) {
-      return { valid: false, errors: ['Image URL is required'] };
+      return { valid: false, errors: ["Image URL is required"] };
     }
     return { valid: true, errors: [] };
   }
@@ -332,13 +339,13 @@ interface IProjectService {
   deleteProject(id: string): Promise<void>;
   getProject(id: string): Promise<Project>;
   listProjects(userId: string): Promise<Project[]>;
-  
+
   uploadManga(projectId: string, file: File): Promise<void>;
   uploadAudio(projectId: string, file: File): Promise<void>;
-  
+
   startRender(projectId: string, settings: RenderSettings): Promise<RenderJob>;
   cancelRender(jobId: string): Promise<void>;
-  
+
   analyzeAudio(projectId: string): Promise<AudioAnalysis>;
   detectPanels(projectId: string): Promise<Panel[]>;
 }
@@ -388,10 +395,10 @@ class ProjectController {
 
 ```typescript
 // Extract only needed methods
-type ProjectReader = Pick<IProjectCrudService, 'getProject' | 'listProjects'>;
+type ProjectReader = Pick<IProjectCrudService, "getProject" | "listProjects">;
 
-// Exclude unneeded methods  
-type ProjectWriter = Omit<IProjectCrudService, 'getProject' | 'listProjects'>;
+// Exclude unneeded methods
+type ProjectWriter = Omit<IProjectCrudService, "getProject" | "listProjects">;
 ```
 
 ---
@@ -409,12 +416,12 @@ Depend on abstractions (interfaces), not concrete implementations:
 ```typescript
 class ProjectService {
   private mongoRepo = new MongoProjectRepository();
-  private s3Client = new S3Client();
+  private storageClient = new LocalStorageClient();
   private emailService = new SendGridEmailService();
-  
+
   async createProject(data: CreateProjectDTO) {
     const project = await this.mongoRepo.create(data);
-    await this.s3Client.upload(project.thumbnailUrl);
+    await this.storageClient.save(project.thumbnailUrl);
     await this.emailService.sendWelcomeEmail(data.email);
     return project;
   }
@@ -438,31 +445,35 @@ interface IStorageService {
 }
 
 interface INotificationService {
-  sendEmail(to: string, template: string, data: Record<string, any>): Promise<void>;
+  sendEmail(
+    to: string,
+    template: string,
+    data: Record<string, any>,
+  ): Promise<void>;
 }
 
 // Implementations in app layer
 class MongoProjectRepository implements IProjectRepository {
   constructor(private db: Database) {}
-  
+
   async create(data: CreateProjectDTO): Promise<Project> {
-    return this.db.collection('projects').insertOne(data);
+    return this.db.collection("projects").insertOne(data);
   }
   // ...
 }
 
-class S3StorageService implements IStorageService {
-  constructor(private s3Client: S3Client) {}
-  
+class LocalStorageService implements IStorageService {
+  constructor(private storageClient: LocalStorageClient) {}
+
   async upload(file: Buffer, path: string): Promise<string> {
-    return this.s3Client.upload(file, path);
+    return this.storageClient.save(file, path);
   }
   // ...
 }
 
 class SendGridNotificationService implements INotificationService {
   constructor(private sendGrid: SendGridClient) {}
-  
+
   async sendEmail(to: string, template: string, data: Record<string, any>) {
     await this.sendGrid.send({ to, template, data });
   }
@@ -473,12 +484,14 @@ class ProjectService {
   constructor(
     private projectRepository: IProjectRepository,
     private storageService: IStorageService,
-    private notificationService: INotificationService
+    private notificationService: INotificationService,
   ) {}
 
   async createProject(data: CreateProjectDTO): Promise<Project> {
     const project = await this.projectRepository.create(data);
-    await this.notificationService.sendEmail(data.email, 'welcome', { name: data.displayName });
+    await this.notificationService.sendEmail(data.email, "welcome", {
+      name: data.displayName,
+    });
     return project;
   }
 }
@@ -488,8 +501,8 @@ class ServiceFactory {
   createProjectService(): IProjectCrudService {
     return new ProjectService(
       new MongoProjectRepository(database),
-      new S3StorageService(s3Client),
-      new SendGridNotificationService(sendGrid)
+      new LocalStorageService(storageClient),
+      new SendGridNotificationService(sendGrid),
     );
   }
 }
@@ -509,8 +522,11 @@ app.use((req, res, next) => {
   next();
 });
 
-app.post('/projects', async (req, res) => {
-  const project = await req.services.projectService.createProject(req.user.id, req.body);
+app.post("/projects", async (req, res) => {
+  const project = await req.services.projectService.createProject(
+    req.user.id,
+    req.body,
+  );
   res.json(project);
 });
 ```
@@ -528,18 +544,23 @@ app.post('/projects', async (req, res) => {
 export const useProject = (projectId: string) => {
   const [project, setProject] = useState<Project | null>(null);
   const [panels, setPanels] = useState<Panel[]>([]);
-  
+
   const fetchProject = useCallback(async () => {
     const data = await api.projects.get(projectId);
     setProject(data);
     setPanels(data.panels);
   }, [projectId]);
-  
-  const updatePanel = useCallback(async (panelId: string, updates: Partial<Panel>) => {
-    await api.panels.update(projectId, panelId, updates);
-    setPanels(prev => prev.map(p => p.id === panelId ? { ...p, ...updates } : p));
-  }, [projectId]);
-  
+
+  const updatePanel = useCallback(
+    async (panelId: string, updates: Partial<Panel>) => {
+      await api.panels.update(projectId, panelId, updates);
+      setPanels((prev) =>
+        prev.map((p) => (p.id === panelId ? { ...p, ...updates } : p)),
+      );
+    },
+    [projectId],
+  );
+
   return { project, panels, fetchProject, updatePanel };
 };
 ```
@@ -552,7 +573,7 @@ interface IProjectStore {
   project: Project | null;
   panels: Panel[];
   isLoading: boolean;
-  
+
   fetchProject(id: string): Promise<void>;
   updatePanel(id: string, updates: Partial<Panel>): Promise<void>;
 }
@@ -562,19 +583,19 @@ const useProjectStore = create<IProjectStore>((set, get) => ({
   project: null,
   panels: [],
   isLoading: false,
-  
+
   fetchProject: async (id: string) => {
     set({ isLoading: true });
     const project = await api.projects.get(id);
     set({ project, panels: project.panels, isLoading: false });
   },
-  
+
   updatePanel: async (id: string, updates: Partial<Panel>) => {
     await api.panels.update(get().project!.id, id, updates);
-    set(state => ({
-      panels: state.panels.map(p => p.id === id ? { ...p, ...updates } : p)
+    set((state) => ({
+      panels: state.panels.map((p) => (p.id === id ? { ...p, ...updates } : p)),
     }));
-  }
+  },
 }));
 ```
 
@@ -602,19 +623,19 @@ class ProjectController {
   constructor(
     private createProjectUseCase: ICreateProjectUseCase,
     private listProjectsUseCase: IListProjectsUseCase,
-    private deleteProjectUseCase: IDeleteProjectUseCase
+    private deleteProjectUseCase: IDeleteProjectUseCase,
   ) {}
-  
+
   async create(req, res) {
     const result = await this.createProjectUseCase.execute(req.body);
     res.json(result);
   }
-  
+
   async list(req, res) {
     const result = await this.listProjectsUseCase.execute(req.query);
     res.json(result);
   }
-  
+
   async delete(req, res) {
     await this.deleteProjectUseCase.execute(req.params.id);
     res.status(204).send();
@@ -634,7 +655,7 @@ class BasePipeline(ABC):
     @abstractmethod
     async def execute(self, input_data: PipelineInput) -> PipelineOutput:
         pass
-    
+
     def validate(self, input_data: PipelineInput) -> ValidationResult:
         # Common validation
         pass
@@ -670,7 +691,7 @@ class BaseModel(ABC):
 class YOLOModel(BaseModel):
     def __init__(self, model_path: str, device: str = "cuda"):
         self.model = self._load_model(model_path, device)
-    
+
     def predict(self, image) -> DetectionOutput:
         return self.model.predict(image)
 
@@ -678,7 +699,7 @@ class YOLOModel(BaseModel):
 class DetectionService:
     def __init__(self, model: BaseModel):
         self.model = model
-    
+
     async def detect(self, image_url: str) -> DetectionResult:
         image = await self._load_image(image_url)
         return self.model.predict(image)
@@ -697,11 +718,11 @@ detection_service = DetectionService(YOLOMobileModel("yolov8n.pt"))
 
 ```typescript
 // Easy to test because of dependency injection
-describe('ProjectService', () => {
+describe("ProjectService", () => {
   let service: ProjectService;
   let mockRepository: jest.Mocked<IProjectRepository>;
   let mockNotification: jest.Mocked<INotificationService>;
-  
+
   beforeEach(() => {
     mockRepository = {
       create: jest.fn(),
@@ -710,18 +731,18 @@ describe('ProjectService', () => {
     mockNotification = {
       sendEmail: jest.fn(),
     };
-    
+
     service = new ProjectService(mockRepository, mockNotification);
   });
-  
-  it('should create project and send notification', async () => {
-    const input = { title: 'Test', userId: 'user-1' };
-    const project = { id: 'proj-1', ...input };
-    
+
+  it("should create project and send notification", async () => {
+    const input = { title: "Test", userId: "user-1" };
+    const project = { id: "proj-1", ...input };
+
     mockRepository.create.mockResolvedValue(project);
-    
+
     const result = await service.createProject(input);
-    
+
     expect(result).toEqual(project);
     expect(mockRepository.create).toHaveBeenCalledWith(input);
     expect(mockNotification.sendEmail).toHaveBeenCalled();
@@ -733,13 +754,13 @@ describe('ProjectService', () => {
 
 ## Summary Table
 
-| Principle | Application | Benefit |
-|-----------|-------------|---------|
-| **SRP** | Separate controllers, services, repositories | Focused classes, easier maintenance |
-| **OCP** | Strategy pattern for render formats | Add features without modifying existing code |
-| **LSP** | Subclasses maintain parent contracts | Reliable polymorphism |
-| **ISP** | Small, focused interfaces | No unnecessary dependencies |
-| **DIP** | Inject dependencies via constructor | Flexible, testable code |
+| Principle | Application                                  | Benefit                                      |
+| --------- | -------------------------------------------- | -------------------------------------------- |
+| **SRP**   | Separate controllers, services, repositories | Focused classes, easier maintenance          |
+| **OCP**   | Strategy pattern for render formats          | Add features without modifying existing code |
+| **LSP**   | Subclasses maintain parent contracts         | Reliable polymorphism                        |
+| **ISP**   | Small, focused interfaces                    | No unnecessary dependencies                  |
+| **DIP**   | Inject dependencies via constructor          | Flexible, testable code                      |
 
 ---
 

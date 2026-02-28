@@ -28,7 +28,7 @@ utsukushii-ai/
 │   ├── shared/                 # Shared types & utilities
 │   ├── database/               # MongoDB connection
 │   ├── cache/                  # Redis utilities
-│   └── s3/                     # AWS S3 utilities
+│   └── storage/                # Local storage utilities
 │
 ├── tools/                       # Build and deployment tools
 │   ├── scripts/
@@ -41,13 +41,6 @@ utsukushii-ai/
 │   ├── architecture/
 │   ├── api/
 │   └── assets/
-│
-├── k8s/                         # Kubernetes manifests
-│   ├── base/
-│   ├── overlays/
-│   │   ├── development/
-│   │   └── production/
-│   └── components/
 │
 ├── docker/                      # Docker configurations
 │   ├── api/
@@ -109,9 +102,7 @@ apps/web/
 │   │   │   │           └── page.tsx
 │   │   │   ├── settings/
 │   │   │   │   ├── page.tsx
-│   │   │   │   ├── profile/
-│   │   │   │   │   └── page.tsx
-│   │   │   │   └── billing/
+│   │   │   │   └── profile/
 │   │   │   │       └── page.tsx
 │   │   │   └── layout.tsx
 │   │   │
@@ -310,7 +301,7 @@ apps/api/
 │   │   ├── projectService.ts
 │   │   ├── panelService.ts
 │   │   ├── renderService.ts
-│   │   ├── s3Service.ts
+│   │   ├── storageService.ts
 │   │   ├── emailService.ts
 │   │   ├── webhookService.ts
 │   │   ├── analyticsService.ts
@@ -352,7 +343,7 @@ apps/api/
 │   │   ├── index.ts
 │   │   ├── database.ts
 │   │   ├── redis.ts
-│   │   ├── s3.ts
+│   │   ├── storage.ts
 │   │   ├── auth.ts
 │   │   └── server.ts
 │   │
@@ -633,14 +624,13 @@ packages/cache/
 └── README.md
 ```
 
-### S3 Package (packages/s3)
+### Storage Package (packages/storage)
 
 ```
-packages/s3/
+packages/storage/
 ├── src/
-│   ├── client.ts          # S3 client
-│   ├── buckets.ts         # Bucket definitions
-│   ├── presigned.ts       # Presigned URL generation
+│   ├── client.ts          # Local FS client
+│   ├── buckets.ts         # Directory definitions
 │   ├── upload.ts          # Upload helpers
 │   ├── download.ts        # Download helpers
 │   ├── copy.ts            # Copy operations
@@ -648,7 +638,7 @@ packages/s3/
 │   └── index.ts
 │
 ├── types/                 # TypeScript types
-│   ├── s3.ts
+│   ├── storage.ts
 │   └── index.ts
 │
 ├── paths/                 # Path utilities
@@ -768,6 +758,7 @@ docs/
 ### Monorepo Structure
 
 We use **Turborepo** for managing the monorepo because:
+
 - Shared code between apps is versioned together
 - Dependency management is centralized
 - Build caching speeds up CI/CD
@@ -778,7 +769,7 @@ We use **Turborepo** for managing the monorepo because:
 - **packages/shared**: Types and utilities used by all apps
 - **packages/database**: MongoDB connection and schemas
 - **packages/cache**: Redis utilities
-- **packages/s3**: AWS S3 helpers
+- **packages/storage**: Local storage helpers
 
 ### Normalized Coordinates
 
@@ -787,21 +778,21 @@ We use **Turborepo** for managing the monorepo because:
 ```typescript
 // Example normalized coordinates
 interface NormalizedBBox {
-  x: number;      // 0.0 to 1.0
-  y: number;      // 0.0 to 1.0
-  width: number;  // 0.0 to 1.0
-  height: number;  // 0.0 to 1.0
+  x: number; // 0.0 to 1.0
+  y: number; // 0.0 to 1.0
+  width: number; // 0.0 to 1.0
+  height: number; // 0.0 to 1.0
 }
 ```
 
 ### Environment-Specific Files
 
-| File | Purpose |
-|------|---------|
-| `.env` | Local development (not committed) |
-| `.env.example` | Template for environment variables |
-| `.env.local` | Local overrides (not committed) |
-| `.env.production` | Production secrets |
+| File              | Purpose                            |
+| ----------------- | ---------------------------------- |
+| `.env`            | Local development (not committed)  |
+| `.env.example`    | Template for environment variables |
+| `.env.local`      | Local overrides (not committed)    |
+| `.env.production` | Production secrets                 |
 
 ---
 
@@ -822,7 +813,7 @@ We use path aliases for cleaner imports:
       "@shared/*": ["../../packages/shared/src/*"],
       "@database/*": ["../../packages/database/src/*"],
       "@cache/*": ["../../packages/cache/src/*"],
-      "@s3/*": ["../../packages/s3/src/*"]
+      "@storage/*": ["../../packages/storage/src/*"]
     }
   }
 }

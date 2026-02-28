@@ -34,41 +34,49 @@
 
 ## Overview
 
-**UtsukushiiAI** (Japanese: 美しい - "Beautiful") is a production-grade generative media platform designed to automate the creation of high-energy, beat-synced "Manga Music Videos" (MMVs). It utilizes Computer Vision (CV) to segment static manga pages and Generative AI to animate them into vertical video formats (9:16) for social media platforms like TikTok, Instagram Reels, and YouTube Shorts.
+**UtsukushiiAI** (Japanese: 美しい - "Beautiful") is an open-source, local-first generative media platform designed to automate the creation of high-energy, beat-synced "Manga Music Videos" (MMVs).
+
+Designed for transparency and privacy, UtsukushiiAI runs entirely on your local hardware. It utilizes Computer Vision (CV) to segment static manga pages and Generative AI to animate them—without ever requiring your sensitive creative assets to leave your machine.
 
 ### Core Objectives
 
-- **Automated Motion**: Convert static 2D manga panels into 3D parallax animations
-- **Rhythm Intelligence**: Precisely sync visual transitions to audio beats
-- **Aesthetic Preservation**: Maintain the original mangaka's art style while adding cinematic "glow" and "glitch" effects
-- **Efficiency**: Reduce manual video editing time from 4 hours to < 2 minutes
+- **Local-First Processing**: Keep your storage and compute on your own machine.
+- **Environment-Driven Configuration**: Setup your own MongoDB URIs and third-party API keys (YouTube, OpenAI, etc.) strictly via `.env` files.
+- **Rhythm Intelligence**: Precisely sync visual transitions to audio beats automatically.
+- **Privacy by Design**: User data stays on their machine unless explicitly sent to third-party APIs.
+- **Efficiency**: Reduce manual video editing time from 4 hours to < 2 minutes using local ML pipelines.
 
 ---
 
 ## Features
 
 ### The Forge (Upload)
+
 - Multi-modal drag-and-drop for Manga (PDF, PNG, JPG) and Music (MP3, WAV)
 - Automatic manga page extraction from PDF files
 - YouTube audio download via yt-dlp for "Vibe-Matching" music
 
 ### The Canvas Studio
+
 - Interactive Bounding Box (BBox) adjustment for AI-detected panels
 - Real-time preview of panel segmentation
 - Layer management for foreground/background elements
 
 ### Rhythm Timeline
+
 - Visual waveform display with automated beat-marker detection
 - Millisecond-accurate sync point placement
 - Drag-and-drop transition effects
 
 ### Render Engine
+
 - YOLOv12 panel detection with Manga109 fine-tuning
 - MiDaS depth estimation for 3D "Wiggle" parallax effects
 - Stable Video Diffusion (SVD) for character animation
 - FFmpeg/MoviePy video composition
 
 ### Export Options
+
 - Multiple aspect ratios: 9:16 (Stories/Reels), 16:9 (YouTube), 1:1 (Instagram)
 - Quality presets: Draft, Standard, High, Ultra
 - Direct upload to social platforms
@@ -78,44 +86,47 @@
 ## Tech Stack
 
 ### Frontend
-| Technology | Purpose |
-|------------|---------|
-| Next.js 15 | App Router, React Server Components |
-| TypeScript | Type safety across full stack |
-| Zustand | Global state management |
-| Remotion | Frame-accurate video preview |
-| Framer Motion | Cinematic UI animations |
-| Tailwind CSS | Utility-first styling |
+
+| Technology    | Purpose                             |
+| ------------- | ----------------------------------- |
+| Next.js 15    | App Router, React Server Components |
+| TypeScript    | Type safety across full stack       |
+| Zustand       | Global state management             |
+| Remotion      | Frame-accurate video preview        |
+| Framer Motion | Cinematic UI animations             |
+| Tailwind CSS  | Utility-first styling               |
 
 ### Backend (Orchestration)
-| Technology | Purpose |
-|------------|---------|
-| Express.js | REST API server |
-| Socket.io | Real-time progress updates |
-| JWT | Authentication |
-| AWS SDK | S3 signed URL generation |
+
+| Technology  | Purpose                    |
+| ----------- | -------------------------- |
+| Express.js  | REST API server            |
+| Socket.io   | Real-time progress updates |
+| JWT         | Authentication             |
+| File System | Local storage management   |
 
 ### Backend (ML Inference)
-| Technology | Purpose |
-|------------|---------|
-| FastAPI | High-performance ML API |
-| Python 3.11+ | ML runtime |
-| PyTorch | Deep learning framework |
-| YOLOv12 | Panel detection |
-| SAM 2 | Instance segmentation |
-| MiDaS | Depth estimation |
-| Stable Video Diffusion | Character animation |
-| Librosa | Audio analysis |
-| FFmpeg | Video processing |
+
+| Technology             | Purpose                 |
+| ---------------------- | ----------------------- |
+| FastAPI                | High-performance ML API |
+| Python 3.11+           | ML runtime              |
+| PyTorch                | Deep learning framework |
+| YOLOv12                | Panel detection         |
+| SAM 2                  | Instance segmentation   |
+| MiDaS                  | Depth estimation        |
+| Stable Video Diffusion | Character animation     |
+| Librosa                | Audio analysis          |
+| FFmpeg                 | Video processing        |
 
 ### Data & Infrastructure
-| Technology | Purpose |
-|------------|---------|
-| MongoDB | Project metadata, panel JSON |
-| Redis | Render queue, session cache |
-| AWS S3 | Object storage |
-| Docker | Containerization |
-| Kubernetes | Production orchestration |
+
+| Technology    | Purpose                      |
+| ------------- | ---------------------------- |
+| MongoDB       | Project metadata, panel JSON |
+| Redis         | Render queue, session cache  |
+| Local Storage | Object storage (disk)        |
+| Docker        | Containerization             |
 
 ---
 
@@ -128,17 +139,19 @@
 - Docker & Docker Compose
 - MongoDB 6.x
 - Redis 7.x
-- AWS Account (S3)
+- Local Storage (Disk Space)
 
 ### Local Development Setup
 
 1. **Clone the repository**
+
 ```bash
 git clone https://github.com/utsukushii/utsukushii-ai.git
 cd utsukushii-ai
 ```
 
 2. **Environment Configuration**
+
 ```bash
 # Copy environment files
 cp apps/web/.env.example apps/web/.env.local
@@ -146,10 +159,12 @@ cp apps/api/.env.example apps/api/.env
 cp apps/worker/.env.example apps/worker/.env
 
 # Edit with your credentials
-# Required: MongoDB URI, Redis URL, AWS credentials, JWT secret
+# ALL infrastructure must be configured here before starting!
+# Required: MONGODB_URI, REDIS_URL, YOUTUBE_API_KEY, OPENAI_API_KEY, etc.
 ```
 
 3. **Start with Docker Compose**
+
 ```bash
 # Start all services
 docker-compose up -d
@@ -178,6 +193,7 @@ uvicorn main:app --reload
 ```
 
 5. **Access the Application**
+
 - Frontend: http://localhost:3000
 - API: http://localhost:4000
 - ML Worker: http://localhost:8000
@@ -206,7 +222,7 @@ UtsukushiiAI follows a **Polyglot Microservices** architecture:
          ┌────────────────┼────────────────┐
          ▼                ▼                ▼
 ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐
-│  MongoDB    │  │    Redis    │  │  AWS S3         │
+│  MongoDB    │  │    Redis    │  │  Local Storage  │
 │  (State)    │  │   (Queue)   │  │  (Storage)      │
 └─────────────┘  └─────────────┘  └─────────────────┘
          │
@@ -276,7 +292,7 @@ utsukushii-ai/
 │   │
 │   ├── cache/               # Redis client & utilities
 │   │
-│   └── s3/                  # AWS S3 utilities
+│   └── storage/             # Local storage utilities
 │
 ├── tools/
 │   ├── scripts/             # Build & deployment scripts
@@ -300,84 +316,90 @@ utsukushii-ai/
 
 ### Authentication
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/auth/register` | POST | Register new user |
-| `/api/auth/login` | POST | Login user |
-| `/api/auth/logout` | POST | Logout user |
-| `/api/auth/refresh` | POST | Refresh JWT token |
-| `/api/auth/me` | GET | Get current user |
+| Endpoint             | Method | Description       |
+| -------------------- | ------ | ----------------- |
+| `/api/auth/register` | POST   | Register new user |
+| `/api/auth/login`    | POST   | Login user        |
+| `/api/auth/logout`   | POST   | Logout user       |
+| `/api/auth/refresh`  | POST   | Refresh JWT token |
+| `/api/auth/me`       | GET    | Get current user  |
 
 ### Projects
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/projects` | GET | List user projects |
-| `/api/projects` | POST | Create new project |
-| `/api/projects/:id` | GET | Get project details |
-| `/api/projects/:id` | PUT | Update project |
-| `/api/projects/:id` | DELETE | Delete project |
-| `/api/projects/:id/panels` | GET | Get project panels |
-| `/api/projects/:id/panels` | POST | Add panel to project |
-| `/api/projects/:id/panels/:panelId` | PUT | Update panel |
-| `/api/projects/:id/panels/:panelId` | DELETE | Delete panel |
+| Endpoint                            | Method | Description          |
+| ----------------------------------- | ------ | -------------------- |
+| `/api/projects`                     | GET    | List user projects   |
+| `/api/projects`                     | POST   | Create new project   |
+| `/api/projects/:id`                 | GET    | Get project details  |
+| `/api/projects/:id`                 | PUT    | Update project       |
+| `/api/projects/:id`                 | DELETE | Delete project       |
+| `/api/projects/:id/panels`          | GET    | Get project panels   |
+| `/api/projects/:id/panels`          | POST   | Add panel to project |
+| `/api/projects/:id/panels/:panelId` | PUT    | Update panel         |
+| `/api/projects/:id/panels/:panelId` | DELETE | Delete panel         |
 
 ### | Method | Description Rendering
 
-| Endpoint |
-|----------|--------|-------------|
-| `/api/render/start` | POST | Start render job |
-| `/api/render/:jobId` | GET | Get render status |
-| `/api/render/:jobId` | DELETE | Cancel render job |
-| `/api/render/:jobId/download` | GET | Download rendered video |
+| Endpoint                      |
+| ----------------------------- | ------ | ----------------------- |
+| `/api/render/start`           | POST   | Start render job        |
+| `/api/render/:jobId`          | GET    | Get render status       |
+| `/api/render/:jobId`          | DELETE | Cancel render job       |
+| `/api/render/:jobId/download` | GET    | Download rendered video |
 
 ### Presigned URLs
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/upload/presign` | POST | Get presigned S3 URL |
-| `/api/upload/complete` | POST | Confirm upload complete |
+| Endpoint               | Method | Description             |
+| ---------------------- | ------ | ----------------------- |
+| `/api/upload/direct`   | POST   | Get direct upload URL   |
+| `/api/upload/complete` | POST   | Confirm upload complete |
 
 ### WebSocket Events
 
-| Event | Direction | Description |
-|-------|-----------|-------------|
-| `render:progress` | Server→Client | Render progress update |
-| `render:complete` | Server→Client | Render completed |
-| `render:error` | Server→Client | Render error |
-| `panel:detected` | Server→Client | Panel detection complete |
+| Event             | Direction     | Description              |
+| ----------------- | ------------- | ------------------------ |
+| `render:progress` | Server→Client | Render progress update   |
+| `render:complete` | Server→Client | Render completed         |
+| `render:error`    | Server→Client | Render error             |
+| `panel:detected`  | Server→Client | Panel detection complete |
 
 ---
 
 ## ML Pipeline
 
 ### Stage 1: Panel Detection (YOLOv12)
+
 - Input: Manga image (PNG/JPG/PDF page)
 - Output: Bounding box coordinates for each panel
 - Model: Fine-tuned on Manga109 dataset
 - Coordinates: Normalized (0.0 - 1.0) for scale invariance
 
 ### Stage 2: Instance Segmentation (SAM 2)
+
 - Input: Panel bounding boxes + original image
 - Output: Binary masks for characters/foreground
 - Model: SAM 2 (Segment Anything 2)
 
 ### Stage 3: Depth Estimation (MiDaS)
+
 - Input: Original image
 - Output: Depth map for parallax effect
 - Effect: "Wiggle" 3D animation based on depth
 
 ### Stage 4: Audio Analysis (Librosa)
+
 - Input: Audio file (MP3/WAV)
 - Output: BPM, onset timestamps, beat markers
 - Algorithm: Harmonic-Percussive Source Separation (HPSS)
 
 ### Stage 5: Character Animation (SVD)
+
 - Input: Segmented character images
 - Output: Animated frames with subtle movement
 - Model: Stable Video Diffusion
 
 ### Stage 6: Video Composition (FFmpeg)
+
 - Input: All layers + audio + beat markers
 - Output: Final MP4 video (9:16, 30fps)
 - Effects: Glow, glitch, transitions synced to beats
@@ -386,18 +408,10 @@ utsukushii-ai/
 
 ## Deployment
 
-### Docker Compose (Development)
+### Docker Compose
+
 ```bash
 docker-compose up -d
-```
-
-### Kubernetes (Production)
-```bash
-# Deploy to Kubernetes
-kubectl apply -f k8s/
-
-# Scale workers
-kubectl scale deployment worker --replicas=5
 ```
 
 ### Environment Variables

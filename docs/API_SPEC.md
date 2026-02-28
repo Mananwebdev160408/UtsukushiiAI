@@ -10,19 +10,18 @@ This document provides comprehensive REST API documentation for the UtsukushiiAI
 2. [Authentication](#authentication)
 3. [Request/Response Format](#requestresponse-format)
 4. [Error Handling](#error-handling)
-5. [Rate Limiting](#rate-limiting)
-6. [API Endpoints](#api-endpoints)
-7. [WebSocket Events](#websocket-events)
+5. [API Endpoints](#api-endpoints)
+6. [WebSocket Events](#websocket-events)
 
 ---
 
 ## Base URL & Versioning
 
-| Environment | Base URL |
-|------------|----------|
-| Production | `https://api.utsukushii.ai` |
-| Staging | `https://api.staging.utsukushii.ai` |
-| Development | `http://localhost:4000` |
+| Environment | Base URL                            |
+| ----------- | ----------------------------------- |
+| Production  | `https://api.utsukushii.ai`         |
+| Staging     | `https://api.staging.utsukushii.ai` |
+| Development | `http://localhost:4000`             |
 
 **Version**: The API uses URL versioning. Current version: `v1`
 
@@ -39,7 +38,8 @@ https://api.utsukushii.ai/v1/auth/login
 The API uses JWT (JSON Web Tokens) for authentication.
 
 #### Access Token
-- **Lifetime**: 15 minutes
+
+- **Lifetime**: 5 hours
 - **Usage**: Include in `Authorization` header
 
 ```http
@@ -47,6 +47,7 @@ Authorization: Bearer <access_token>
 ```
 
 #### Refresh Token
+
 - **Lifetime**: 7 days
 - **Usage**: Exchange for new access token
 
@@ -56,7 +57,7 @@ Authorization: Bearer <access_token>
 {
   "accessToken": "eyJhbGciOiJIUzI1NiIs...",
   "refreshToken": "eyJhbGciOiJIUzI1NiIs...",
-  "expiresIn": 900
+  "expiresIn": 18000
 }
 ```
 
@@ -130,57 +131,36 @@ X-Request-ID: <uuid>
 
 ### HTTP Status Codes
 
-| Status | Code | Description |
-|--------|------|-------------|
-| 200 | OK | Request succeeded |
-| 201 | CREATED | Resource created successfully |
-| 204 | NO_CONTENT | Request succeeded, no content to return |
-| 400 | BAD_REQUEST | Invalid request data |
-| 401 | UNAUTHORIZED | Invalid or missing authentication |
-| 403 | FORBIDDEN | Insufficient permissions |
-| 404 | NOT_FOUND | Resource not found |
-| 409 | CONFLICT | Resource already exists |
-| 422 | UNPROCESSABLE_ENTITY | Validation failed |
-| 429 | TOO_MANY_REQUESTS | Rate limit exceeded |
-| 500 | INTERNAL_ERROR | Server error |
-| 503 | SERVICE_UNAVAILABLE | Service temporarily unavailable |
+| Status | Code                 | Description                             |
+| ------ | -------------------- | --------------------------------------- |
+| 200    | OK                   | Request succeeded                       |
+| 201    | CREATED              | Resource created successfully           |
+| 204    | NO_CONTENT           | Request succeeded, no content to return |
+| 400    | BAD_REQUEST          | Invalid request data                    |
+| 401    | UNAUTHORIZED         | Invalid or missing authentication       |
+| 403    | FORBIDDEN            | Insufficient permissions                |
+| 404    | NOT_FOUND            | Resource not found                      |
+| 409    | CONFLICT             | Resource already exists                 |
+| 422    | UNPROCESSABLE_ENTITY | Validation failed                       |
+| 500    | INTERNAL_ERROR       | Server error                            |
+| 503    | SERVICE_UNAVAILABLE  | Service temporarily unavailable         |
 
 ### Error Codes
 
-| Code | Status | Description |
-|------|--------|-------------|
-| `UNAUTHORIZED` | 401 | Invalid or missing JWT token |
-| `TOKEN_EXPIRED` | 401 | JWT token has expired |
-| `REFRESH_TOKEN_INVALID` | 401 | Refresh token is invalid or revoked |
-| `FORBIDDEN` | 403 | User lacks required permissions |
-| `NOT_FOUND` | 404 | Resource not found |
-| `PROJECT_NOT_FOUND` | 404 | Project does not exist |
-| `PANEL_NOT_FOUND` | 404 | Panel does not exist |
-| `VALIDATION_ERROR` | 400 | Invalid request body |
-| `INVALID_BBOX` | 400 | Invalid bounding box coordinates |
-| `RATE_LIMITED` | 429 | Too many requests |
-| `UPLOAD_FAILED` | 422 | File upload failed |
-| `RENDER_FAILED` | 500 | Video render failed |
-| `INTERNAL_ERROR` | 500 | Unexpected server error |
-
----
-
-## Rate Limiting
-
-| Endpoint | Limit | Window |
-|----------|-------|--------|
-| Authentication | 10 | 1 minute |
-| General API | 100 | 1 minute |
-| Render Start | 5 | 1 minute |
-| File Upload | 20 | 1 hour |
-
-Rate limit headers are included in responses:
-
-```http
-X-RateLimit-Limit: 100
-X-RateLimit-Remaining: 95
-X-RateLimit-Reset: 1705316400
-```
+| Code                    | Status | Description                         |
+| ----------------------- | ------ | ----------------------------------- |
+| `UNAUTHORIZED`          | 401    | Invalid or missing JWT token        |
+| `TOKEN_EXPIRED`         | 401    | JWT token has expired               |
+| `REFRESH_TOKEN_INVALID` | 401    | Refresh token is invalid or revoked |
+| `FORBIDDEN`             | 403    | User lacks required permissions     |
+| `NOT_FOUND`             | 404    | Resource not found                  |
+| `PROJECT_NOT_FOUND`     | 404    | Project does not exist              |
+| `PANEL_NOT_FOUND`       | 404    | Panel does not exist                |
+| `VALIDATION_ERROR`      | 400    | Invalid request body                |
+| `INVALID_BBOX`          | 400    | Invalid bounding box coordinates    |
+| `UPLOAD_FAILED`         | 422    | File upload failed                  |
+| `RENDER_FAILED`         | 500    | Video render failed                 |
+| `INTERNAL_ERROR`        | 500    | Unexpected server error             |
 
 ---
 
@@ -253,7 +233,7 @@ POST /v1/auth/login
       "email": "user@example.com",
       "username": "manga_creator",
       "displayName": "Manga Creator",
-      "avatarUrl": "https://s3.../avatars/..."
+      "avatarUrl": "http://localhost:4000/uploads/avatars/..."
     },
     "accessToken": "eyJhbGciOiJIUzI1NiIs...",
     "refreshToken": "eyJhbGciOiJIUzI1NiIs...",
@@ -331,7 +311,7 @@ Authorization: Bearer <access_token>
     "email": "user@example.com",
     "username": "manga_creator",
     "displayName": "Manga Creator",
-    "avatarUrl": "https://s3.../avatars/...",
+    "avatarUrl": "http://localhost:4000/uploads/avatars/...",
     "plan": "pro",
     "renderCredits": 100,
     "createdAt": "2024-01-15T10:30:00Z"
@@ -351,13 +331,13 @@ GET /v1/projects
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| page | number | 1 | Page number |
-| limit | number | 20 | Items per page (max 100) |
-| sort | string | -createdAt | Sort field |
-| order | string | desc | Sort order (asc/desc) |
-| search | string | | Search by title |
+| Parameter | Type   | Default    | Description              |
+| --------- | ------ | ---------- | ------------------------ |
+| page      | number | 1          | Page number              |
+| limit     | number | 20         | Items per page (max 100) |
+| sort      | string | -createdAt | Sort field               |
+| order     | string | desc       | Sort order (asc/desc)    |
+| search    | string |            | Search by title          |
 
 **Response (200):**
 
@@ -371,7 +351,7 @@ GET /v1/projects
       "description": "A test project",
       "aspectRatio": "9:16",
       "status": "draft",
-      "thumbnailUrl": "https://s3.../thumbnails/...",
+      "thumbnailUrl": "http://localhost:4000/uploads/thumbnails/...",
       "panelCount": 12,
       "createdAt": "2024-01-15T10:30:00Z",
       "updatedAt": "2024-01-15T12:00:00Z"
@@ -454,16 +434,16 @@ GET /v1/projects/:id
       "fps": 30,
       "quality": "high"
     },
-    "mangaUrl": "https://s3.../manga/...",
+    "mangaUrl": "http://localhost:4000/uploads/manga/...",
     "mangaPages": [
       {
         "pageNumber": 1,
-        "imageUrl": "https://s3.../manga/page1.png",
+        "imageUrl": "http://localhost:4000/uploads/manga/page1.png",
         "width": 1200,
         "height": 1800
       }
     ],
-    "audioUrl": "https://s3.../audio/song.mp3",
+    "audioUrl": "http://localhost:4000/uploads/audio/song.mp3",
     "audioInfo": {
       "duration": 180,
       "bpm": 128,
@@ -558,9 +538,9 @@ GET /v1/projects/:projectId/panels
         "width": 0.5,
         "height": 0.5
       },
-      "maskUrl": "https://s3.../masks/...",
-      "depthMapUrl": "https://s3.../depth/...",
-      "animatedUrl": "https://s3.../animated/...",
+      "maskUrl": "http://localhost:4000/uploads/masks/...",
+      "depthMapUrl": "http://localhost:4000/uploads/depth/...",
+      "animatedUrl": "http://localhost:4000/uploads/animated/...",
       "effects": {
         "parallax": 0.3,
         "glow": true,
@@ -890,11 +870,11 @@ GET /v1/render
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| page | number | 1 | Page number |
-| limit | number | 20 | Items per page |
-| status | string | | Filter by status |
+| Parameter | Type   | Default | Description      |
+| --------- | ------ | ------- | ---------------- |
+| page      | number | 1       | Page number      |
+| limit     | number | 20      | Items per page   |
+| status    | string |         | Filter by status |
 
 **Response (200):**
 
@@ -911,7 +891,7 @@ GET /v1/render
         "stage": "complete",
         "percent": 100
       },
-      "outputUrl": "https://s3.../exports/...",
+      "outputUrl": "http://localhost:4000/uploads/exports/...",
       "fileSize": 15000000,
       "createdAt": "2024-01-15T10:30:00Z",
       "completedAt": "2024-01-15T10:35:00Z"
@@ -943,16 +923,16 @@ DELETE /v1/render/:jobId
 GET /v1/render/:jobId/download
 ```
 
-**Response (302):** Redirects to S3 presigned download URL
+**Response (302):** Redirects to local storage download URL
 
 ---
 
 ### Upload Endpoints
 
-#### Get Presigned URL
+#### Get Direct Upload URL
 
 ```http
-POST /v1/upload/presign
+POST /v1/upload/direct
 ```
 
 **Request Body:**
@@ -972,15 +952,12 @@ POST /v1/upload/presign
 {
   "success": true,
   "data": {
-    "uploadUrl": "https://s3.amazonaws.com/utsukushii-raw/...",
-    "fileUrl": "https://s3.../raw/manga/...",
+    "uploadUrl": "http://localhost:4000/v1/upload/direct",
+    "fileUrl": "http://localhost:4000/uploads/raw/manga/...",
     "expiresIn": 3600,
     "fields": {
       "key": "raw/manga/abc123/manga.pdf",
-      "Content-Type": "application/pdf",
-      "AWSAccessKeyId": "...",
-      "Signature": "...",
-      "Policy": "..."
+      "Content-Type": "application/pdf"
     }
   }
 }
@@ -998,7 +975,7 @@ POST /v1/upload/complete
 
 ```json
 {
-  "fileUrl": "https://s3.../raw/manga/...",
+  "fileUrl": "http://localhost:4000/uploads/raw/manga/...",
   "projectId": "prj_abc123",
   "type": "manga"
 }
@@ -1011,7 +988,7 @@ POST /v1/upload/complete
   "success": true,
   "data": {
     "fileId": "file_abc123",
-    "fileUrl": "https://s3.../raw/manga/...",
+    "fileUrl": "http://localhost:4000/uploads/raw/manga/...",
     "type": "manga",
     "metadata": {
       "pageCount": 24,
@@ -1074,7 +1051,7 @@ GET /v1/health
     "services": {
       "mongodb": "connected",
       "redis": "connected",
-      "s3": "connected"
+      "storage": "connected"
     }
   }
 }
@@ -1087,10 +1064,10 @@ GET /v1/health
 ### Connection
 
 ```javascript
-const socket = io('https://api.utsukushii.ai/render', {
+const socket = io("http://localhost:4000/render", {
   auth: {
-    token: '<access_token>'
-  }
+    token: "<access_token>",
+  },
 });
 ```
 
@@ -1119,7 +1096,7 @@ const socket = io('https://api.utsukushii.ai/render', {
   "event": "render:complete",
   "data": {
     "jobId": "rnd_xyz789",
-    "outputUrl": "https://s3.../exports/...",
+    "outputUrl": "http://localhost:4000/uploads/exports/...",
     "fileSize": 15000000,
     "duration": 300
   }
@@ -1174,26 +1151,29 @@ const socket = io('https://api.utsukushii.ai/render', {
 ### JavaScript/TypeScript
 
 ```typescript
-import { UtsukushiiClient } from '@utsukushii/client';
+import { UtsukushiiClient } from "@utsukushii/client";
 
 const client = new UtsukushiiClient({
-  baseUrl: 'https://api.utsukushii.ai',
-  accessToken: '...'
+  baseUrl: "http://localhost:4000",
+  accessToken: "...",
 });
 
 // Create project
 const project = await client.projects.create({
-  title: 'My MMV',
-  aspectRatio: '9:16'
+  title: "My MMV",
+  aspectRatio: "9:16",
 });
 
 // Upload manga
-const uploadUrl = await client.upload.getPresignedUrl('manga.pdf', 'application/pdf');
+const uploadUrl = await client.upload.getDirectUploadUrl(
+  "manga.pdf",
+  "application/pdf",
+);
 await client.upload.uploadFile(uploadUrl.uploadUrl, file);
 
 // Start render
 const job = await client.render.start(project.id, {
-  quality: 'high'
+  quality: "high",
 });
 
 // Listen to progress
@@ -1206,6 +1186,6 @@ client.render.onProgress((progress) => {
 
 ## Changelog
 
-| Version | Date | Changes |
-|---------|------|---------|
-| 1.0.0 | 2024-01-15 | Initial API release |
+| Version | Date       | Changes             |
+| ------- | ---------- | ------------------- |
+| 1.0.0   | 2024-01-15 | Initial API release |

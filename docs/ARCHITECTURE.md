@@ -17,20 +17,22 @@
 ## System Overview
 
 UtsukushiiAI is a polyglot microservices platform that combines:
+
 - **Next.js 15** for the frontend user interface
 - **Express.js** for API orchestration
 - **FastAPI (Python)** for ML inference
 - **MongoDB** for persistent storage
 - **Redis** for caching and job queuing
-- **AWS S3** for object storage
+- **Local Storage** for object storage
 
 ### Design Principles
 
 1. **Separation of Concerns**: Each service has a single, well-defined responsibility
 2. **Loose Coupling**: Services communicate via well-defined APIs
-3. **High Cohesion**: Related functionality is grouped together
-4. **Scalability**: Each component can scale independently
-5. **Resilience**: Failures are contained and don't cascade
+3. **Local-First Processing**: Storage and compute happen on the user's local machine
+4. **Environment-Driven Infrastructure**: Configuration (MongoDB URLs, API Keys) is handled strictly via `.env` files before project startup
+5. **Privacy by Design**: User data stays on their machine unless explicitly sent to third-party APIs
+6. **Open Source Core**: Built for transparency and community contribution
 
 ---
 
@@ -54,11 +56,9 @@ UtsukushiiAI is a polyglot microservices platform that combines:
 ┌─────────────────────────────────────┴───────────────────────────────────────┐
 │                           EDGE LAYER                                         │
 │  ┌─────────────────────────────────────────────────────────────────────┐    │
-│  │  CloudFlare / AWS CloudFront                                         │    │
-│  │  - DDoS Protection                                                   │    │
-│  │  - WAF (Web Application Firewall)                                    │    │
-│  │  - SSL Termination                                                   │    │
-│  │  - CDN for static assets                                             │    │
+│  │  Local Reverse Proxy / Nginx                                        │    │
+│  │  - SSL Termination (Optional)                                         │    │
+│  │  - Static Asset Serving                                               │    │
 │  └─────────────────────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────┬───────────────────────────────────────┘
                                       │
@@ -83,7 +83,7 @@ UtsukushiiAI is a polyglot microservices platform that combines:
 │  │  ┌──────────────────────────────────────────────────────────────┐  │    │
 │  │  │                   Services                                   │  │    │
 │  │  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────────────┐  │  │    │
-│  │  │  │ Project  │ │  Render  │ │   S3     │ │   WebSocket    │  │  │    │
+│  │  │  │ Project  │ │  Render  │ │  Storage   │ │   WebSocket    │  │  │    │
 │  │  │  │ Service  │ │  Service │ │ Service  │ │   Service      │  │  │    │
 │  │  │  └──────────┘ └──────────┘ └──────────┘ └────────────────┘  │  │    │
 │  │  └──────────────────────────────────────────────────────────────┘  │    │
@@ -94,13 +94,13 @@ UtsukushiiAI is a polyglot microservices platform that combines:
          │                   │                   │
          ▼                   ▼                   ▼
 ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
-│    MongoDB      │ │     Redis       │ │     AWS S3      │
-│   (Primary DB)  │ │    (Cache)      │ │   (Storage)     │
+│  Primary DB     │ │     Redis       │ │  Local Storage  │
+│   (MongoDB)     │ │    (Cache)      │ │   (Storage)     │
 │                 │ │                 │ │                 │
-│ - Projects      │ │ - Session Data  │ │ - Raw Manga     │
-│ - Users         │ │ - Render Queue  │ │ - Extracted     │
-│ - Panels        │ │ - Rate Limiting │ │ - Final Exports │
-│ - Render Jobs   │ │                 │ │                 │
+│ - Project Data  │ │ - Session Data  │ │ - Raw Manga     │
+│ - User Auth     │ │ - Job Queue     │ │ - Extracted     │
+│ - Metadata      │ │                 │ │ - Final Exports │
+│                 │ │                 │ │                 │
 └─────────────────┘ └─────────────────┘ └─────────────────┘
          │
          │ Internal Network
@@ -141,6 +141,7 @@ UtsukushiiAI is a polyglot microservices platform that combines:
 ## Frontend Architecture
 
 ### Technology Stack
+
 - **Next.js 15** (App Router)
 - **TypeScript 5.x**
 - **Zustand** for state management
@@ -227,7 +228,7 @@ interface ProjectStore {
   panels: Panel[];
   isLoading: boolean;
   error: string | null;
-  
+
   // Actions
   fetchProject: (id: string) => Promise<void>;
   updatePanel: (panelId: string, updates: Partial<Panel>) => void;
@@ -270,7 +271,7 @@ api/
 │   ├── services/         # Business logic
 │   │   ├── projectService.ts
 │   │   ├── renderService.ts
-│   │   ├── s3Service.ts
+│   │   ├── storageService.ts
 │   │   └── authService.ts
 │   │
 │   ├── models/           # Data models
@@ -290,7 +291,7 @@ api/
 │   ├── config/          # Configuration
 │   │   ├── database.ts
 │   │   ├── redis.ts
-│   │   └── s3.ts
+│   │   └── storage.ts
 │   │
 │   ├── types/           # TypeScript types
 │   │   └── express.d.ts
@@ -315,53 +316,46 @@ api/
 
 ```typescript
 // routes/projectRoutes.ts
-router.post('/projects', 
-  authMiddleware, 
-  validateProjectCreate, 
-  projectController.create
+router.post(
+  "/projects",
+  authMiddleware,
+  validateProjectCreate,
+  projectController.create,
 );
 
-router.get('/projects', 
-  authMiddleware, 
-  projectController.list
-);
+router.get("/projects", authMiddleware, projectController.list);
 
-router.get('/projects/:id', 
-  authMiddleware, 
-  projectController.getById
-);
+router.get("/projects/:id", authMiddleware, projectController.getById);
 
-router.put('/projects/:id', 
-  authMiddleware, 
+router.put(
+  "/projects/:id",
+  authMiddleware,
   validateProjectUpdate,
-  projectController.update
+  projectController.update,
 );
 
-router.delete('/projects/:id', 
-  authMiddleware, 
-  projectController.delete
-);
+router.delete("/projects/:id", authMiddleware, projectController.delete);
 
 // Panel routes
-router.get('/projects/:id/panels', 
-  authMiddleware, 
-  panelController.list
-);
+router.get("/projects/:id/panels", authMiddleware, panelController.list);
 
-router.post('/projects/:id/panels', 
-  authMiddleware, 
+router.post(
+  "/projects/:id/panels",
+  authMiddleware,
   validatePanelCreate,
-  panelController.create
+  panelController.create,
 );
 
-router.put('/projects/:id/panels/:panelId', 
-  authMiddleware, 
-  panelController.update
+router.put(
+  "/projects/:id/panels/:panelId",
+  authMiddleware,
+  panelController.update,
 );
 
-router.delete('/projects/:id/panels/:panelId', 
-  authMiddleware, 
-  panelController.delete
+router.delete(
+  "/projects/:id/panels/:panelId",
+  authMiddleware,
+  panelController.delete,
 );
 ```
 
@@ -448,13 +442,13 @@ class CompositionPipeline:
     ) -> str:
         # 1. Load and prepare panels
         prepared_panels = await self._prepare_panels(panels)
-        
+
         # 2. Generate depth maps for parallax
         depth_maps = await self._generate_depth_maps(prepared_panels)
-        
+
         # 3. Animate characters with SVD
         animated_frames = await self._animate_characters(prepared_panels)
-        
+
         # 4. Compose video with FFmpeg
         output_path = await self._compose_video(
             animated_frames,
@@ -462,11 +456,11 @@ class CompositionPipeline:
             beats,
             settings
         )
-        
-        # 5. Upload to S3
-        s3_url = await self._upload_to_s3(output_path, project_id)
-        
-        return s3_url
+
+        # 5. Save to Local Storage
+        storage_url = await self._save_to_local(output_path, project_id)
+
+        return storage_url
 ```
 
 ---
@@ -490,16 +484,16 @@ User Action          Express API           MongoDB              Redis
 ### 2. Upload Flow
 
 ```
-User              Express API              AWS S3            ML Worker
+User              Express API              Local Storage     ML Worker
   │                    │                      │                   │
   │──POST /upload/presign──>│                   │                   │
   │                    │<──Presigned URL───────│                   │
   │                    │                      │                   │
   │<──200 OK─────────────│                      │                   │
   │                    │                      │                   │
-  │────────PUT to S3───────────────────────────>│                   │
+  │────────Save to Local Storage───────────────>│                   │
   │                    │                      │                   │
-  │                    │<──Upload Complete─────│                   │
+  │                    │<──Save Complete───────│                   │
   │                    │                      │                   │
   │                    │──Notify ML Worker─────>│                   │
   │                    │                      │                   │
@@ -534,7 +528,7 @@ Express API           Redis Queue         ML Worker           MongoDB
     │                    │                    │                    │
     │<──WS:progress───────│                    │                    │
     │                    │                    │                    │
-    │                    │                    │<──Upload Complete──│
+    │                    │                    │<──Save Complete────│
     │                    │                    │                    │
     │                    │                    │──Update Job───────>│
     │                    │                    │                    │
@@ -561,7 +555,7 @@ Express API           Redis Queue         ML Worker           MongoDB
 ### Data Protection
 
 - **Encryption in Transit**: TLS 1.3
-- **Encryption at Rest**: AWS SSE-KMS for S3
+- **Encryption at Rest**: Optional disk-level encryption
 - **Input Validation**: Zod schemas on both client and server
 
 ### API Security
@@ -609,13 +603,25 @@ Express API           Redis Queue         ML Worker           MongoDB
 
 ### Caching Strategy
 
-| Data Type | Cache | TTL |
-|-----------|-------|-----|
-| User Sessions | Redis | 24 hours |
-| Project Metadata | Redis | 5 minutes |
-| Panel Coordinates | Redis | 1 hour |
-| Beat Markers | Redis | 1 hour |
-| Static Assets | CDN | 1 week |
+| Data Type         | Cache | TTL       |
+| ----------------- | ----- | --------- |
+| User Sessions     | Redis | 24 hours  |
+| Project Metadata  | Redis | 5 minutes |
+| Panel Coordinates | Redis | 1 hour    |
+| External API Keys | Redis | 1 hour    |
+| Static Assets     | Local | 1 week    |
+
+---
+
+## Configuration Management
+
+### Environment Variables (.env)
+
+UtsukushiiAI follows a **strict environment-first configuration** model. All sensitive infrastructure details must be provided in the project root's `.env` files before starting the services.
+
+1. **MongoDB Connectivity**: The `MONGODB_URI` must be set in the `.env` file. The app connects to this instance on startup.
+2. **Third-Party API Keys**: Keys for YouTube extraction, OpenAI, or Anthropic must be defined as environment variables.
+3. **No Runtime Overrides**: To ensure security and predictable local performance, these core infrastructure settings cannot be changed via the frontend UI. Any changes require a service restart.
 
 ---
 
@@ -725,28 +731,28 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed production setup.
 
 ### Error Codes
 
-| Code | HTTP Status | Description |
-|------|-------------|-------------|
-| `UNAUTHORIZED` | 401 | Invalid or missing token |
-| `FORBIDDEN` | 403 | Insufficient permissions |
-| `NOT_FOUND` | 404 | Resource not found |
-| `VALIDATION_ERROR` | 400 | Invalid input data |
-| `RATE_LIMITED` | 429 | Too many requests |
-| `INTERNAL_ERROR` | 500 | Server error |
-| `SERVICE_UNAVAILABLE` | 503 | Service temporarily unavailable |
+| Code                  | HTTP Status | Description                     |
+| --------------------- | ----------- | ------------------------------- |
+| `UNAUTHORIZED`        | 401         | Invalid or missing token        |
+| `FORBIDDEN`           | 403         | Insufficient permissions        |
+| `NOT_FOUND`           | 404         | Resource not found              |
+| `VALIDATION_ERROR`    | 400         | Invalid input data              |
+| `RATE_LIMITED`        | 429         | Too many requests               |
+| `INTERNAL_ERROR`      | 500         | Server error                    |
+| `SERVICE_UNAVAILABLE` | 503         | Service temporarily unavailable |
 
 ---
 
 ## Version Compatibility
 
-| Component | Version | Notes |
-|-----------|---------|-------|
-| Node.js | 20.x LTS | Required |
-| Python | 3.11+ | Required |
-| Next.js | 15.x | App Router |
-| Express | 4.x | |
-| FastAPI | 0.100+ | |
-| MongoDB | 6.x | |
-| Redis | 7.x | |
-| Docker | 24.x | |
-| Kubernetes | 1.28+ | Production |
+| Component | Version  | Notes      |
+| --------- | -------- | ---------- |
+| Node.js   | 20.x LTS | Required   |
+| Python    | 3.11+    | Required   |
+| Next.js   | 15.x     | App Router |
+| Express   | 4.x      |            |
+| FastAPI   | 0.100+   |            |
+| MongoDB   | 6.x      |            |
+| Redis     | 7.x      |            |
+| Docker    | 24.x     |            |
+| FFmpeg    | 6.x      | Required   |

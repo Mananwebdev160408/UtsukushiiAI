@@ -24,25 +24,24 @@ This document defines the skills, constraints, and best practices that code agen
 
 Code agents must utilize the following external skills when available:
 
-| Skill | Purpose | When to Use |
-|-------|---------|-------------|
-| `vercel-react-best-practices` | Next.js optimization | Building frontend components |
-| `eslint-config-next` | Linting Next.js code | Code quality checks |
-| `prettier-config` | Code formatting | All files |
-| `typescript-best-practices` | TypeScript usage | TypeScript code |
-| `docker-best-practices` | Container optimization | Dockerfile creation |
-| `k8s-best-practices` | Kubernetes deployment | K8s manifests |
+| Skill                         | Purpose                | When to Use                  |
+| ----------------------------- | ---------------------- | ---------------------------- |
+| `vercel-react-best-practices` | Next.js optimization   | Building frontend components |
+| `eslint-config-next`          | Linting Next.js code   | Code quality checks          |
+| `prettier-config`             | Code formatting        | All files                    |
+| `typescript-best-practices`   | TypeScript usage       | TypeScript code              |
+| `docker-best-practices`       | Container optimization | Dockerfile creation          |
 
 ### Internal Skills
 
 Code agents must implement these custom skills:
 
-| Skill | Purpose | Files to Modify |
-|-------|---------|-----------------|
-| `utsukushii-core` | Core constraints | All |
-| `utsukushii-ml-pipeline` | ML pipeline setup | apps/worker |
-| `utsukushii-canvas` | Canvas interactions | apps/web |
-| `utsukushii-render` | Render system | apps/api, apps/worker |
+| Skill                    | Purpose             | Files to Modify       |
+| ------------------------ | ------------------- | --------------------- |
+| `utsukushii-core`        | Core constraints    | All                   |
+| `utsukushii-ml-pipeline` | ML pipeline setup   | apps/worker           |
+| `utsukushii-canvas`      | Canvas interactions | apps/web              |
+| `utsukushii-render`      | Render system       | apps/api, apps/worker |
 
 ---
 
@@ -55,28 +54,29 @@ Code agents must implement these custom skills:
 ```typescript
 // ✅ CORRECT: Normalized coordinates (0.0 to 1.0)
 interface NormalizedBBox {
-  x: number;      // 0.0 = left edge, 1.0 = right edge
-  y: number;      // 0.0 = top edge, 1.0 = bottom edge
-  width: number;  // 0.0 to 1.0
+  x: number; // 0.0 = left edge, 1.0 = right edge
+  y: number; // 0.0 = top edge, 1.0 = bottom edge
+  width: number; // 0.0 to 1.0
   height: number; // 0.0 to 1.0
 }
 
 // ❌ WRONG: Pixel coordinates
 interface PixelBBox {
-  x: number;      // 0 to imageWidth
-  y: number;      // 0 to imageHeight
-  width: number;  // pixels
+  x: number; // 0 to imageWidth
+  y: number; // 0 to imageHeight
+  width: number; // pixels
   height: number; // pixels
 }
 ```
 
 **Conversion utilities must be provided:**
+
 ```typescript
 // packages/shared/src/utils/coordinates.ts
 export function denormalizeBBox(
   bbox: NormalizedBBox,
   imageWidth: number,
-  imageHeight: number
+  imageHeight: number,
 ): PixelBBox {
   return {
     x: bbox.x * imageWidth,
@@ -89,7 +89,7 @@ export function denormalizeBBox(
 export function normalizeBBox(
   bbox: PixelBBox,
   imageWidth: number,
-  imageHeight: number
+  imageHeight: number,
 ): NormalizedBBox {
   return {
     x: bbox.x / imageWidth,
@@ -106,17 +106,17 @@ export function normalizeBBox(
 
 ```typescript
 // ✅ CORRECT: Offload to worker
-app.post('/api/render/start', async (req, res) => {
+app.post("/api/render/start", async (req, res) => {
   const job = await renderService.enqueueJob(projectId, settings);
-  
+
   // Return immediately with job ID
-  res.json({ jobId: job.id, status: 'queued' });
-  
+  res.json({ jobId: job.id, status: "queued" });
+
   // Worker processes in background
 });
 
 // ❌ WRONG: Blocking the event loop
-app.post('/api/render/start', async (req, res) => {
+app.post("/api/render/start", async (req, res) => {
   // This blocks the server!
   const result = await renderService.processRenderSync(projectId, settings);
   res.json(result);
@@ -207,9 +207,7 @@ const useProjectStore = create<ProjectStore>((set) => ({
   setProject: (project) => set({ project, panels: project.panels }),
   updatePanel: (id, updates) =>
     set((state) => ({
-      panels: state.panels.map((p) =>
-        p.id === id ? { ...p, ...updates } : p
-      ),
+      panels: state.panels.map((p) => (p.id === id ? { ...p, ...updates } : p)),
     })),
 }));
 ```
@@ -247,14 +245,14 @@ function ProjectButton({ projectId }: { projectId: string }) {
 // ✅ CORRECT: Canvas with normalized coordinates
 function Canvas({ imageUrl, panels, onPanelUpdate }) {
   const [selectedPanel, setSelectedPanel] = useState<string | null>(null);
-  
+
   const handlePanelDrag = useCallback(
     debounce((panelId: string, bbox: NormalizedBBox) => {
       onPanelUpdate(panelId, bbox);
     }, 150),
     [onPanelUpdate]
   );
-  
+
   return (
     <div className="canvas-container">
       <img src={imageUrl} alt="Manga page" />
@@ -287,7 +285,7 @@ function Canvas({ imageUrl, panels, onPanelUpdate }) {
 export class ProjectController {
   constructor(
     private projectService: IProjectService,
-    private renderService: IRenderService
+    private renderService: IRenderService,
   ) {}
 
   async create(req: Request, res: Response, next: NextFunction) {
@@ -304,7 +302,7 @@ export class ProjectController {
 export class ProjectService implements IProjectService {
   constructor(
     private projectRepository: IProjectRepository,
-    private s3Service: IS3Service
+    private storageService: IStorageService,
   ) {}
 
   async create(userId: string, data: CreateProjectDTO): Promise<Project> {
@@ -348,17 +346,17 @@ interface ApiResponse<T> {
 
 ```typescript
 // Server-side
-io.of('/render').on('connection', (socket) => {
-  socket.on('join', (projectId) => {
+io.of("/render").on("connection", (socket) => {
+  socket.on("join", (projectId) => {
     socket.join(`project:${projectId}`);
   });
 });
 
 // Emit progress
-io.of('/render').to(`project:${projectId}`).emit('progress', {
+io.of("/render").to(`project:${projectId}`).emit("progress", {
   jobId,
   progress: 50,
-  stage: 'detecting',
+  stage: "detecting",
 });
 ```
 
@@ -411,24 +409,24 @@ class DetectionPipeline:
         # Download image
         if on_progress:
             on_progress(Progress(stage="download", percent=0))
-        
+
         image = await self._download_image(image_url)
-        
+
         # Run detection
         if on_progress:
             on_progress(Progress(stage="detect", percent=30))
-        
+
         bboxes = await self._detect_panels(image)
-        
+
         # Normalize coordinates (CRITICAL!)
         normalized_bboxes = [
             self._normalize_bbox(bbox, image.size)
             for bbox in bboxes
         ]
-        
+
         if on_progress:
             on_progress(Progress(stage="complete", percent=100))
-        
+
         return DetectionResult(panels=normalized_bboxes)
 ```
 
@@ -442,17 +440,17 @@ class DetectionPipeline:
 # ✅ CORRECT: Lazy model loading
 class YOLODetector:
     _model = None
-    
+
     @classmethod
     async def get_model(cls, device: str = "cuda"):
         if cls._model is None:
             cls._model = await asyncio.to_thread(
-                YOLOv12, 
+                YOLOv12,
                 model_path=MODEL_PATH,
                 device=device
             )
         return cls._model
-    
+
     async def detect(self, image: Image) -> List[BoundingBox]:
         model = await self.get_model()
         results = model.predict(image)
@@ -475,7 +473,7 @@ const panelSchema = new Schema<Panel>(
   {
     projectId: {
       type: Schema.Types.ObjectId,
-      ref: 'projects',
+      ref: "projects",
       required: true,
       index: true,
     },
@@ -491,7 +489,7 @@ const panelSchema = new Schema<Panel>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 panelSchema.index({ projectId: 1, order: 1 });
@@ -507,7 +505,10 @@ panelSchema.index({ projectId: 1, order: 1 });
 // ✅ CORRECT: Repository pattern
 interface IProjectRepository {
   findById(id: string): Promise<Project | null>;
-  findByUserId(userId: string, pagination: Pagination): Promise<PaginatedResult<Project>>;
+  findByUserId(
+    userId: string,
+    pagination: Pagination,
+  ): Promise<PaginatedResult<Project>>;
   create(data: CreateProjectDTO): Promise<Project>;
   update(id: string, data: UpdateProjectDTO): Promise<Project>;
   delete(id: string): Promise<void>;
@@ -515,9 +516,11 @@ interface IProjectRepository {
 
 class ProjectRepository implements IProjectRepository {
   constructor(private db: Db) {}
-  
+
   async findById(id: string): Promise<Project | null> {
-    return this.db.collection<Project>('projects').findOne({ _id: new ObjectId(id) });
+    return this.db
+      .collection<Project>("projects")
+      .findOne({ _id: new ObjectId(id) });
   }
 }
 ```
@@ -539,24 +542,22 @@ const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET!;
 
 async function authenticate(email: string, password: string) {
   const user = await userRepository.findByEmail(email);
-  
+
   const isValid = await bcrypt.compare(password, user.passwordHash);
   if (!isValid) {
-    throw new UnauthorizedError('Invalid credentials');
+    throw new UnauthorizedError("Invalid credentials");
   }
-  
+
   const accessToken = jwt.sign(
     { userId: user.id, role: user.role },
     JWT_SECRET,
-    { expiresIn: '15m' }
+    { expiresIn: "15m" },
   );
-  
-  const refreshToken = jwt.sign(
-    { userId: user.id },
-    JWT_REFRESH_SECRET,
-    { expiresIn: '7d' }
-  );
-  
+
+  const refreshToken = jwt.sign({ userId: user.id }, JWT_REFRESH_SECRET, {
+    expiresIn: "7d",
+  });
+
   return { accessToken, refreshToken };
 }
 ```
@@ -572,26 +573,26 @@ async function authenticate(email: string, password: string) {
 const createProjectSchema = z.object({
   title: z.string().min(1).max(100),
   description: z.string().max(500).optional(),
-  aspectRatio: z.enum(['9:16', '16:9', '1:1']),
+  aspectRatio: z.enum(["9:16", "16:9", "1:1"]),
   settings: renderSettingsSchema.optional(),
 });
 
 export async function createProject(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   const result = createProjectSchema.safeParse(req.body);
-  
+
   if (!result.success) {
     return res.status(400).json({
       error: {
-        code: 'VALIDATION_ERROR',
+        code: "VALIDATION_ERROR",
         details: result.error.flatten(),
       },
     });
   }
-  
+
   // Proceed with validated data
 }
 ```
@@ -600,12 +601,14 @@ export async function createProject(
 
 ```typescript
 // ✅ CORRECT: Strict CORS
-app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') ?? [],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+app.use(
+  cors({
+    origin: process.env.ALLOWED_ORIGINS?.split(",") ?? [],
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 ```
 
 ---
@@ -620,42 +623,44 @@ app.use(cors({
 
 ```typescript
 // ✅ CORRECT: Unit test with mocks
-describe('ProjectService', () => {
+describe("ProjectService", () => {
   let service: ProjectService;
   let mockRepository: jest.Mocked<IProjectRepository>;
-  let mockS3Service: jest.Mocked<IS3Service>;
-  
+  let mockStorageService: jest.Mocked<IStorageService>;
+
   beforeEach(() => {
     mockRepository = {
       create: jest.fn(),
       findById: jest.fn(),
       // ...
     };
-    mockS3Service = {
-      generatePresignedUrl: jest.fn(),
+    mockStorageService = {
+      generateUploadUrl: jest.fn(),
       // ...
     };
-    
-    service = new ProjectService(mockRepository, mockS3Service);
+
+    service = new ProjectService(mockRepository, mockStorageService);
   });
-  
-  describe('create', () => {
-    it('should create a project with generated URL', async () => {
+
+  describe("create", () => {
+    it("should create a project with generated URL", async () => {
       const input: CreateProjectDTO = {
-        title: 'Test Project',
-        aspectRatio: '9:16',
+        title: "Test Project",
+        aspectRatio: "9:16",
       };
-      
+
       mockRepository.create.mockResolvedValue({
-        id: '123',
+        id: "123",
         ...input,
       } as Project);
-      mockS3Service.generatePresignedUrl.mockResolvedValue('https://s3...');
-      
-      const result = await service.create('user-1', input);
-      
-      expect(result.title).toBe('Test Project');
-      expect(mockS3Service.generatePresignedUrl).toHaveBeenCalled();
+      mockStorageService.generateUploadUrl.mockResolvedValue(
+        "http://localhost:4000/uploads/...",
+      );
+
+      const result = await service.create("user-1", input);
+
+      expect(result.title).toBe("Test Project");
+      expect(mockStorageService.generateUploadUrl).toHaveBeenCalled();
     });
   });
 });
@@ -665,27 +670,27 @@ describe('ProjectService', () => {
 
 ```typescript
 // ✅ CORRECT: Integration test
-describe('Projects API', () => {
+describe("Projects API", () => {
   const app = createTestApp();
-  
+
   beforeAll(async () => {
     await setupTestDatabase();
   });
-  
+
   afterAll(async () => {
     await teardownTestDatabase();
   });
-  
-  describe('POST /api/projects', () => {
-    it('should create a new project', async () => {
+
+  describe("POST /api/projects", () => {
+    it("should create a new project", async () => {
       const response = await request(app)
-        .post('/api/projects')
-        .set('Authorization', `Bearer ${testToken}`)
+        .post("/api/projects")
+        .set("Authorization", `Bearer ${testToken}`)
         .send({
-          title: 'Test Project',
-          aspectRatio: '9:16',
+          title: "Test Project",
+          aspectRatio: "9:16",
         });
-      
+
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
     });
@@ -703,14 +708,14 @@ describe('Projects API', () => {
 2. **Types**: Use TypeScript types instead of JSDoc where possible
 3. **Examples**: Include usage examples for complex functions
 
-```typescript
+````typescript
 /**
  * Creates a new project for the user.
- * 
+ *
  * @param userId - The ID of the user creating the project
  * @param data - Project creation data
- * @returns The created project with presigned upload URL
- * 
+ * @returns The created project with upload URL
+ *
  * @example
  * ```typescript
  * const project = await projectService.create('user-123', {
@@ -721,15 +726,16 @@ describe('Projects API', () => {
  */
 async function createProject(
   userId: string,
-  data: CreateProjectDTO
+  data: CreateProjectDTO,
 ): Promise<ProjectWithUrl> {
   // Implementation
 }
-```
+````
 
 ### README Files
 
 Each package must have a README.md with:
+
 1. Installation instructions
 2. Usage examples
 3. API reference
@@ -741,17 +747,16 @@ Each package must have a README.md with:
 
 Use consistent error codes across the application:
 
-| Code | Description |
-|------|-------------|
-| `UNAUTHORIZED` | Invalid or missing authentication |
-| `FORBIDDEN` | Insufficient permissions |
-| `NOT_FOUND` | Resource not found |
-| `VALIDATION_ERROR` | Invalid input data |
-| `RATE_LIMITED` | Too many requests |
-| `INTERNAL_ERROR` | Server error |
-| `SERVICE_UNAVAILABLE` | Service temporarily unavailable |
-| `UPLOAD_FAILED` | File upload failed |
-| `RENDER_FAILED` | Video render failed |
+| Code                  | Description                       |
+| --------------------- | --------------------------------- |
+| `UNAUTHORIZED`        | Invalid or missing authentication |
+| `FORBIDDEN`           | Insufficient permissions          |
+| `NOT_FOUND`           | Resource not found                |
+| `VALIDATION_ERROR`    | Invalid input data                |
+| `INTERNAL_ERROR`      | Server error                      |
+| `SERVICE_UNAVAILABLE` | Service temporarily unavailable   |
+| `UPLOAD_FAILED`       | File upload failed                |
+| `RENDER_FAILED`       | Video render failed               |
 
 ---
 

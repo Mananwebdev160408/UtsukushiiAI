@@ -10,10 +10,9 @@ This document provides comprehensive deployment instructions for the UtsukushiiA
 2. [Environment Configuration](#environment-configuration)
 3. [Local Development](#local-development)
 4. [Docker Deployment](#docker-deployment)
-5. [Kubernetes Deployment](#kubernetes-deployment)
-6. [Cloud Deployment](#cloud-deployment)
-7. [Monitoring](#monitoring)
-8. [Troubleshooting](#troubleshooting)
+5. [Cloud Deployment](#cloud-deployment)
+6. [Monitoring](#monitoring)
+7. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -21,23 +20,23 @@ This document provides comprehensive deployment instructions for the UtsukushiiA
 
 ### Hardware Requirements
 
-| Component | Minimum | Recommended |
-|-----------|---------|-------------|
-| CPU | 4 cores | 8+ cores |
-| RAM | 8 GB | 16 GB |
-| GPU | None | NVIDIA GPU with 8GB VRAM |
-| Storage | 50 GB | 100+ GB SSD |
+| Component | Minimum | Recommended              |
+| --------- | ------- | ------------------------ |
+| CPU       | 4 cores | 8+ cores                 |
+| RAM       | 8 GB    | 16 GB                    |
+| GPU       | None    | NVIDIA GPU with 8GB VRAM |
+| Storage   | 50 GB   | 100+ GB SSD              |
 
 ### Software Requirements
 
-| Software | Version |
-|----------|---------|
-| Node.js | 20.x LTS |
-| Python | 3.11+ |
-| Docker | 24.x |
-| Docker Compose | 2.x |
-| MongoDB | 6.x |
-| Redis | 7.x |
+| Software       | Version  |
+| -------------- | -------- |
+| Node.js        | 20.x LTS |
+| Python         | 3.11+    |
+| Docker         | 24.x     |
+| Docker Compose | 2.x      |
+| MongoDB        | 6.x      |
+| Redis          | 7.x      |
 
 ---
 
@@ -64,14 +63,16 @@ REDIS_URL=redis://redis:6379
 JWT_SECRET=your-super-secret-jwt-key
 JWT_REFRESH_SECRET=your-refresh-secret
 
-# AWS
-AWS_REGION=us-east-1
-AWS_ACCESS_KEY_ID=your-access-key
-AWS_SECRET_ACCESS_KEY=your-secret-key
-S3_BUCKET=utsukushii-prod
+STORAGE_PATH=./uploads
+STORAGE_BUCKET=utsukushii-prod
 
 # Frontend URL
 FRONTEND_URL=https://app.utsukushii.ai
+
+# Third-Party API Keys (Required)
+YOUTUBE_API_KEY=AIza...
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
 ```
 
 #### Worker Service (.env)
@@ -95,6 +96,8 @@ MIDAS_MODEL_PATH=/app/models/midas-v3.pt
 # GPU
 CUDA_VISIBLE_DEVICES=0
 ```
+
+---
 
 ---
 
@@ -250,245 +253,49 @@ networks:
 
 ---
 
-## Kubernetes Deployment
-
-### Prerequisites
-
-- Kubernetes 1.28+
-- Helm 3.x
-- kubectl configured
-
-### Namespace Setup
+## MongoDB (Local)
 
 ```bash
-kubectl create namespace utsukushii
-```
-
-### Deploy with Helm
-
-```bash
-# Add Helm repo
-helm repo add utsukushii https://charts.utsukushii.ai
-helm repo update
-
-# Install chart
-helm install utsukushii utsukushii/utsukushii \
-  --namespace utsukushii \
-  --set-string image.tag=v1.0.0 \
-  --set mongodb.auth.username=admin \
-  --set mongodb.auth.password=changeme
-```
-
-### Manual K8s Deployment
-
-```yaml
-# k8s/api-deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: utsukushii-api
-  namespace: utsukushii
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: utsukushii-api
-  template:
-    metadata:
-      labels:
-        app: utsukushii-api
-    spec:
-      containers:
-        - name: api
-          image: utsukushii/api:latest
-          ports:
-            - containerPort: 4000
-          env:
-            - name: NODE_ENV
-              value: "production"
-            - name: MONGODB_URI
-              valueFrom:
-                secretKeyRef:
-                  name: utsukushii-secrets
-                  key: mongodb-uri
-          resources:
-            requests:
-              memory: "512Mi"
-              cpu: "500m"
-            limits:
-              memory: "1Gi"
-              cpu: "1000m"
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: utsukushii-api
-  namespace: utsukushii
-spec:
-  selector:
-    app: utsukushii-api
-  ports:
-    - port: 80
-      targetPort: 4000
-  type: ClusterIP
-```
-
-### GPU Worker Deployment
-
-```yaml
-# k8s/worker-deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: utsukushii-worker
-  namespace: utsukushii
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: utsukushii-worker
-  template:
-    metadata:
-      labels:
-        app: utsukushii-worker
-    spec:
-      containers:
-        - name: worker
-          image: utsukushii/worker:latest
-          env:
-            - name: CUDA_VISIBLE_DEVICES
-              value: "0"
-          resources:
-            requests:
-              memory: "2Gi"
-              cpu: "2"
-              nvidia.com/gpu: 1
-            limits:
-              memory: "4Gi"
-              cpu: "4"
-              nvidia.com/gpu: 1
-      tolerations:
-        - key: "nvidia.com/gpu"
-          operator: "Exists"
-          effect: "NoSchedule"
-```
-
-### Horizontal Pod Autoscaling
-
-```yaml
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: utsukushii-api-hpa
-  namespace: utsukushii
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: utsukushii-api
-  minReplicas: 2
-  maxReplicas: 10
-  metrics:
-    - type: Resource
-      resource:
-        name: cpu
-        target:
-          type: Utilization
-          averageUtilization: 70
-```
-
----
-
-## Cloud Deployment
-
-### AWS EKS
-
-```bash
-# Create EKS cluster
-eksctl create cluster \
-  --name utsukushii-prod \
-  --region us-east-1 \
-  --nodegroup-name workers \
-  --node-type t3.large \
-  --nodes 3
-
-# Add GPU nodes
-eksctl create nodegroup \
-  --cluster utsukushii-prod \
-  --name gpu-workers \
-  --node-type p3.2xlarge \
-  --nodes 2
-```
-
-### AWS RDS (MongoDB)
-
-```bash
-# Use Atlas or DocumentDB
 # Connection string format:
-mongodb+srv://<username>:<password>@cluster0.xxx.mongodb.net/?retryWrites=true&w=majority
+mongodb://<username>:<password>@mongodb:27017/utsukushii
 ```
 
-### AWS S3
+### Local Storage Setup
+
+Create the necessary directories for storage:
 
 ```bash
-# Create buckets
-aws s3 mb s3://utsukushii-raw
-aws s3 mb s3://utsukushii-exports
-
-# Enable versioning
-aws s3api put-bucket-versioning \
-  --bucket utsukushii-raw \
-  --versioning-configuration Status=Enabled
+mkdir -p ./uploads/raw
+mkdir -p ./uploads/exports
+chmod -R 775 ./uploads
 ```
 
 ---
 
 ## Monitoring
 
-### Prometheus + Grafana
+Proper monitoring ensures the health of your local services.
 
-```yaml
-# monitoring/prometheus.yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: prometheus-config
-  namespace: monitoring
-data:
-  prometheus.yml: |
-    global:
-      scrape_interval: 15s
-    scrape_configs:
-      - job_name: 'api'
-        static_configs:
-          - targets: ['utsukushii-api:4000']
-      - job_name: 'worker'
-        static_configs:
-          - targets: ['utsukushii-worker:8000']
+### Health Checks
+
+```bash
+# API Health
+curl http://localhost:4000/v1/health
+
+# Worker Health
+curl http://localhost:8000/health
 ```
 
 ### Logging
 
-```yaml
-# k8s/logging.yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: fluentd-config
-  namespace: logging
-data:
-  fluent.conf: |
-    <source>
-      @type tail
-      path /var/log/containers/*.log
-      pos_file /var/log/fluentd.log.pos
-      tag kubernetes.*
-    </source>
-    <match **>
-      @type elasticsearch
-      hosts elasticsearch.logging.svc:9200
-      logstash_format true
-    </match>
+For local development and self-hosting, logs are managed via Docker:
+
+```bash
+# View all logs
+docker-compose logs -f
+
+# View specific service logs
+docker-compose logs -f worker
 ```
 
 ---
@@ -497,96 +304,44 @@ data:
 
 ### Common Issues
 
-#### Out of Memory
+#### Database Connection Issues
+
+Verify your MongoDB and Redis instances are running:
 
 ```bash
-# Check memory usage
-kubectl top pods
-
-# Increase memory limits
-kubectl patch deployment utsukushii-worker -p '{"spec":{"template":{"spec":{"containers":[{"name":"worker","resources":{"limits":{"memory":"8Gi"}}}]}}}}'
+docker-compose ps
 ```
+
+If using a remote MongoDB URI, ensure it is accessible from your network and the credentials provided in the `.env` file are correct.
 
 #### GPU Not Available
 
-```bash
-# Check NVIDIA device plugin
-kubectl get pods -n kube-system | grep nvidia
+If the ML worker is not utilizing the GPU:
 
-# Verify GPU availability
-kubectl describe node <node-name> | grep nvidia
-```
+1. Ensure NVIDIA Drivers are installed on the host.
+2. Verify `nvidia-container-toolkit` is installed.
+3. Check worker logs for CUDA initialization errors.
 
-#### Database Connection Issues
+#### Port Conflicts
 
-```bash
-# Check MongoDB connection
-kubectl exec -it utsukushii-api-xxx -- sh -c 'nc -zv mongodb 27017'
-
-# View MongoDB logs
-kubectl logs -l app=mongodb -n utsukushii
-```
-
-### Health Checks
-
-```bash
-# API Health
-curl https://api.utsukushii.ai/v1/health
-
-# Worker Health
-curl http://worker-service:8000/health
-```
-
-### Rollback
-
-```bash
-# Rollback deployment
-kubectl rollout undo deployment/utsukushii-api
-
-# Rollback to specific revision
-kubectl rollout undo deployment/utsukushii-api --to-revision=2
-```
+If ports 3000, 4000, or 8000 are already in use, you can modify the `PORT` or `NEXT_PUBLIC_API_URL` in your `.env` files.
 
 ---
 
 ## Security
 
-### TLS/SSL
+### Local Security
 
-```yaml
-# k8s/ingress-tls.yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: utsukushii-ingress
-  namespace: utsukushii
-  annotations:
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
-spec:
-  tls:
-    - hosts:
-        - api.utsukushii.ai
-        - app.utsukushii.ai
-      secretName: utsukushii-tls
-  rules:
-    - host: api.utsukushii.ai
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: utsukushii-api
-                port:
-                  number: 80
-```
+- **Authentication**: Ensure strong passwords for your local MongoDB instance.
+- **JWT Secrets**: Use a unique, long string for `JWT_SECRET` in `.env`.
+- **API Keys**: Keys must be provided in the `.env` file. Do not commit these keys to version control.
 
-### Secrets Management
+### API Access
 
-```bash
-# Create secrets
-kubectl create secret generic utsukushii-secrets \
-  --from-literal=mongodb-uri='mongodb://user:pass@host:27017' \
-  --from-literal=jwt-secret='your-jwt-secret' \
-  --namespace utsukushii
-```
+By default, the API binds to `localhost`. If you need to access it from other machines on your local network, update the `PORT` and `HOST` settings, but ensure your firewall is configured correctly.
+
+---
+
+<p align="center">
+  End of Deployment Guide
+</p>
