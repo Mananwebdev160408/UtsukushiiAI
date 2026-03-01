@@ -1,0 +1,151 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: #000000;
+  --color-foreground: #ffffff;
+
+  --color-primary: #ccff00;
+  --color-secondary: #ff4500;
+  --color-dark: #000000;
+  --color-light: #ffffff;
+  --color-surface-dark: #121212;
+
+  --shadow-neo: 8px 8px 0px 0px #ccff00;
+  --shadow-neo-sm: 4px 4px 0px 0px #ccff00;
+  --shadow-neo-orange: 8px 8px 0px 0px #ff4500;
+  --shadow-neo-white: 6px 6px 0px 0px #ffffff;
+  --shadow-neo-black: 8px 8px 0px 0px #000000;
+  --shadow-hard: 6px 6px 0px 0px #000000;
+  --shadow-hard-sm: 3px 3px 0px 0px #000000;
+
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-archivo);
+  --font-mono: var(--font-mono);
+  --font-body: var(--font-body);
+
+  --border-3: 3px;
+  --border-4: 4px;
+  --border-6: 6px;
+
+  --animate-scroll: scroll 20s linear infinite;
+  --animate-scroll-slow: scroll 30s linear infinite;
+
+  @keyframes scroll {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-100%);
+    }
+  }
+}
+
+:root {
+  --background: #000000;
+  --foreground: #ffffff;
+  --primary: #ccff00;
+  --secondary: #ff4500;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+}
+
+/* Custom Utilities */
+@layer base {
+  .neo-border {
+    border: 3px solid #000000;
+  }
+
+  .neo-border-thick {
+    border: 4px solid #000000;
+  }
+
+  .neo-border-white {
+    border: 2px solid #ffffff;
+  }
+
+  .neo-border-primary {
+    border: 3px solid var(--primary);
+  }
+
+  .text-stroke {
+    -webkit-text-stroke: 1px #000000;
+  }
+
+  .grid-bg {
+    background-image:
+      linear-gradient(rgba(204, 255, 0, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(204, 255, 0, 0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .halftone-bg {
+    background-image: radial-gradient(#ffffff22 1.5px, transparent 0);
+    background-size: 15px 15px;
+  }
+
+  .manga-dots {
+    background-image: radial-gradient(#ffffff11 1px, transparent 0);
+    background-size: 10px 10px;
+  }
+
+  .zigzag-connector {
+    background: linear-gradient(
+      135deg,
+      transparent 25%,
+      #ff4500 25%,
+      #ff4500 50%,
+      transparent 50%,
+      transparent 75%,
+      #ff4500 75%,
+      #ff4500 100%
+    );
+    background-size: 40px 40px;
+  }
+
+  .marquee-container {
+    display: flex;
+    overflow: hidden;
+    user-select: none;
+    gap: 0;
+  }
+
+  .marquee-content {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-around;
+    min-width: 100%;
+    gap: 0;
+    animation: var(--animate-scroll);
+  }
+
+  .marquee-content-slow {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-around;
+    min-width: 100%;
+    gap: 2rem;
+    animation: var(--animate-scroll-slow);
+  }
+
+  .code-bg-overlay {
+    mask-image: linear-gradient(to bottom, transparent, black, transparent);
+    opacity: 0.15;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 12px;
+}
+::-webkit-scrollbar-track {
+  background: #000000;
+}
+::-webkit-scrollbar-thumb {
+  background: #ccff00;
+  border: 2px solid #000000;
+}
