@@ -34,7 +34,7 @@ export const updateProjectSchema = z.object({
   settings: z
     .object({
       resolution: z.enum(["720x1280", "1080x1920", "1440x2560"]).optional(),
-      fps: z.enum([24, 30, 60] as const).optional(),
+      fps: z.union([z.literal(24), z.literal(30), z.literal(60)]).optional(),
       quality: z.enum(["draft", "standard", "high", "ultra"]).optional(),
     })
     .optional(),
@@ -95,7 +95,7 @@ export const startRenderSchema = z.object({
     .object({
       quality: z.enum(["draft", "standard", "high", "ultra"]).default("high"),
       resolution: z.string().default("1080x1920"),
-      fps: z.number().default(30),
+      fps: z.union([z.literal(24), z.literal(30), z.literal(60)]).default(30),
       format: z.enum(["mp4", "webm"]).default("mp4"),
       effects: z
         .object({

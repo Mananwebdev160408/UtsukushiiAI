@@ -19,6 +19,10 @@
     },
     "types": ["node"]
   },
+  "references": [
+    { "path": "../../packages/shared" },
+    { "path": "../../packages/database" }
+  ],
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "tests"]
 }
