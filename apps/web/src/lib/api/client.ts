@@ -124,10 +124,15 @@ export const api = {
     },
   },
   assets: {
-    upload: async (file: File, type: "manga" | "audio") => {
+    upload: async (
+      file: File,
+      type: "manga" | "audio",
+      chapterInfo?: { number: number; title?: string },
+    ) => {
       logger("UPLOAD", `/v1/assets/upload/${type}`, {
         name: file.name,
         size: file.size,
+        ...chapterInfo,
       });
       // Simulate progress via console if we had a callback
       await sleep(DELAY * 1.5);
@@ -136,6 +141,10 @@ export const api = {
         data: {
           id: `ast_${Math.floor(Math.random() * 1000)}`,
           url: `/fake/url/${file.name}`,
+          ...(chapterInfo && {
+            chapterNumber: chapterInfo.number,
+            chapterTitle: chapterInfo.title,
+          }),
         },
       };
     },

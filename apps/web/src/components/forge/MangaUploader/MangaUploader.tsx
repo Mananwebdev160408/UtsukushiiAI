@@ -33,23 +33,36 @@ export function MangaUploader({
   >([]);
 
   const onUpload = async (file: File) => {
+    // Determine next chapter number
+    const nextChapterNumber = files.length + 1;
+
     const newFile = {
       name: file.name,
       size: (file.size / 1024 / 1024).toFixed(1) + " MB",
       status: "uploading" as const,
       pages: Math.floor(Math.random() * 200) + 50,
       res: "2048px Width",
+      chapterNumber: nextChapterNumber,
+      chapterTitle: `Chapter ${nextChapterNumber}`,
     };
 
     setFiles((prev) => [newFile, ...prev]);
 
     try {
-      const res = await api.assets.upload(file, "manga");
+      const res = await api.assets.upload(file, "manga", {
+        number: nextChapterNumber,
+        title: newFile.chapterTitle,
+      });
       if (res.success) {
         setFiles((prev) =>
           prev.map((f) =>
             f.name === file.name
-              ? { ...f, status: "completed", id: res.data.id }
+              ? {
+                  ...f,
+                  status: "completed",
+                  id: res.data.id,
+                  chapterNumber: res.data.chapterNumber,
+                }
               : f,
           ),
         );
@@ -166,10 +179,10 @@ export function MangaUploader({
                       <div className="flex justify-between items-start mb-2">
                         <div>
                           <h4 className="text-2xl font-black text-white uppercase italic leading-none">
-                            {file.name}
+                            {(file as any).chapterTitle || file.name}
                           </h4>
                           <span className="text-primary text-[10px] font-black bg-primary/10 px-2 py-0.5 mt-2 inline-block border border-primary/20 uppercase tracking-widest italic">
-                            Manga Source
+                            Chapter {(file as any).chapterNumber} // Source
                           </span>
                         </div>
                         <button className="text-white/20 hover:text-red-500 transition-colors">

@@ -114,12 +114,18 @@ export const directUploadSchema = z.object({
   contentType: z.string().min(1),
   folder: z.enum(["manga", "audio", "images"]),
   projectId: z.string().min(1),
+  chapterNumber: z.number().int().min(1).optional(), // Optional for audio/images
+  chapterTitle: z.string().optional(),
 });
 
 export const confirmUploadSchema = z.object({
   fileUrl: z.string().min(1),
   projectId: z.string().min(1),
   type: z.enum(["manga", "audio"]),
+  chapterNumber: z.number().int().min(1).optional(),
+  chapterTitle: z.string().optional(),
+  mimeType: z.string().optional(),
+  size: z.number().optional(),
 });
 
 // YouTube

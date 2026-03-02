@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { storageService } from "../services";
+import { storageService, projectService } from "../services";
 
 export const getDirectUploadUrl = async (
   req: Request,
@@ -21,7 +21,41 @@ export const confirmUpload = async (
   next: NextFunction,
 ) => {
   try {
-    // Logic to verify file exists in storage and update project metadata
+    const userId = (req as any).user.id;
+    const {
+      projectId,
+      fileUrl,
+      type,
+      chapterNumber,
+      chapterTitle,
+      mimeType,
+      size,
+    } = req.body;
+
+    if (type === "manga") {
+      const chapter = {
+        id: `chap_${Date.now()}`,
+        chapterNumber: chapterNumber || 1,
+        title: chapterTitle || `Chapter ${chapterNumber || 1}`,
+        fileUrl,
+        originalName: fileUrl.split("/").pop() || "unknown",
+        mimeType: mimeType || "application/pdf",
+        size: size || 0,
+      };
+
+      await projectService.updateProject(userId, projectId, {
+        $push: { mangaChapters: chapter },
+        status: "processing", // Auto-trigger processing on new chapter
+      });
+    } else if (type === "audio") {
+      await projectService.updateProject(userId, projectId, {
+        audioInfo: {
+          fileUrl,
+          originalName: fileUrl.split("/").pop() || "unknown",
+        },
+      });
+    }
+
     res.status(200).json({ status: "success", message: "Upload confirmed" });
   } catch (error) {
     next(error);

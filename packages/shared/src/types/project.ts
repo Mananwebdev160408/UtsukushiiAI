@@ -5,7 +5,10 @@ export interface Project {
   description?: string;
   status: "draft" | "processing" | "ready" | "error";
   aspectRatio: "9:16" | "16:9" | "1:1";
-  mangaPage?: {
+  mangaChapters: Array<{
+    id: string;
+    chapterNumber: number;
+    title?: string;
     fileUrl: string;
     originalName: string;
     mimeType: string;
@@ -13,7 +16,7 @@ export interface Project {
     width?: number;
     height?: number;
     pageCount?: number;
-  };
+  }>;
   audioInfo?: {
     fileUrl: string;
     originalName: string;
