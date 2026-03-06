@@ -7,7 +7,9 @@ import { connectDB } from "./database/connection";
 import { errorHandler, limiter } from "./middleware";
 import { logger } from "./utils/logger";
 
+import { createServer } from "http";
 import routes from "./routes";
+import { initWebSocket } from "./services/websocketService";
 
 const app = express();
 
@@ -23,6 +25,9 @@ app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
+// Static File Serving
+app.use("/uploads", express.static(config.storage.path));
+
 // API Routes
 app.use("/v1", limiter);
 app.use("/v1", routes);
@@ -34,7 +39,10 @@ const startServer = async () => {
   try {
     await connectDB(config.mongodb.uri);
 
-    app.listen(config.port, () => {
+    const httpServer = createServer(app);
+    initWebSocket(httpServer);
+
+    httpServer.listen(config.port, () => {
       logger.info(
         `Server running on port ${config.port} in ${config.nodeEnv} mode`,
       );
