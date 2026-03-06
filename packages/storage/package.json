@@ -1,0 +1,20 @@
+{
+  "name": "@utsukushii/storage",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "multer": "^1.4.5-lts.1",
+    "@utsukushii/shared": "*"
+  },
+  "devDependencies": {
+    "@types/multer": "^1.4.12",
+    "typescript": "^5.7.3",
+    "@types/node": "^22.10.5"
+  }
+}

@@ -1,0 +1,19 @@
+import fs from "fs";
+
+export const fileExists = async (filePath: string): Promise<boolean> => {
+  try {
+    await fs.promises.access(filePath, fs.constants.F_OK);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+export const getFileSize = async (filePath: string): Promise<number> => {
+  try {
+    const stats = await fs.promises.stat(filePath);
+    return stats.size;
+  } catch {
+    return 0;
+  }
+};

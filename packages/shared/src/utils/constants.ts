@@ -1,0 +1,49 @@
+// HTTP Status Codes
+export const HTTP_STATUS = {
+  OK: 200,
+  CREATED: 201,
+  ACCEPTED: 202,
+  NO_CONTENT: 204,
+  BAD_REQUEST: 400,
+  UNAUTHORIZED: 401,
+  FORBIDDEN: 403,
+  NOT_FOUND: 404,
+  CONFLICT: 409,
+  UNPROCESSABLE_ENTITY: 422,
+  TOO_MANY_REQUESTS: 429,
+  INTERNAL_SERVER_ERROR: 500,
+  BAD_GATEWAY: 502,
+  SERVICE_UNAVAILABLE: 503,
+} as const;
+
+// Application Error Codes
+export const ERROR_CODES = {
+  VALIDATION_ERROR: "VALIDATION_ERROR",
+  UNAUTHORIZED: "UNAUTHORIZED",
+  FORBIDDEN: "FORBIDDEN",
+  NOT_FOUND: "NOT_FOUND",
+  CONFLICT: "CONFLICT",
+  RATE_LIMIT_EXCEEDED: "RATE_LIMIT_EXCEEDED",
+  INTERNAL_ERROR: "INTERNAL_ERROR",
+  FILE_TOO_LARGE: "FILE_TOO_LARGE",
+  UNSUPPORTED_MEDIA_TYPE: "UNSUPPORTED_MEDIA_TYPE",
+} as const;
+
+// Render Job Statuses
+export const RENDER_STATUS = {
+  PENDING: "pending",
+  PROCESSING: "processing",
+  COMPLETED: "completed",
+  FAILED: "failed",
+} as const;
+
+export type RenderStatus = (typeof RENDER_STATUS)[keyof typeof RENDER_STATUS];
+
+// Common constants
+export const CONSTANTS = {
+  PAGINATION: {
+    DEFAULT_PAGE: 1,
+    DEFAULT_LIMIT: 20,
+    MAX_LIMIT: 100,
+  },
+} as const;
