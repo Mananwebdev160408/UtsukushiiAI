@@ -1,0 +1,31 @@
+fastapi>=0.115.0
+uvicorn>=0.32.0
+pydantic>=2.10.0
+pydantic-settings>=2.7.0
+python-multipart>=0.0.12
+python-dotenv>=1.0.1
+
+# ML Frameworks
+torch>=2.6.0
+torchvision>=0.21.0
+torchaudio>=2.6.0
+transformers>=4.48.0
+diffusers>=0.32.0
+ultralytics>=8.3.0
+opencv-python>=4.11.0
+pillow>=11.0.0
+numpy>=2.1.0
+librosa>=0.10.2
+
+# Database & Cache
+motor==3.3.2
+redis==5.0.1
+
+# Utilities
+tqdm==4.66.1
+requests==2.31.0
+aiofiles==23.2.1
+pytest==8.0.0
+pytest-asyncio==0.23.5
+ffmpeg-python>=0.2.0
+huggingface_hub>=0.20.0
