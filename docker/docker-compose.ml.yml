@@ -1,0 +1,76 @@
+# UtsukushiiAI ML Worker — Docker Compose
+# Runs the ML worker with Redis for job queue management
+#
+# Usage:
+#   docker-compose -f docker/docker-compose.ml.yml up
+#   docker-compose -f docker/docker-compose.ml.yml up --build
+
+version: "3.8"
+
+services:
+  # ── ML Worker ──────────────────────────────────────────────────
+  worker:
+    build:
+      context: ../apps/worker
+      dockerfile: Dockerfile.worker
+    ports:
+      - "8001:8001"
+    environment:
+      - PORT=8001
+      - DEVICE=cuda
+      - MODEL_CACHE_DIR=/app/models
+      - STORAGE_PATH=/app/storage
+      - DOWNLOAD_PATH=/app/downloads
+      - OUTPUT_PATH=/app/output
+      - MONGODB_URI=mongodb://mongodb:27017/utsukushiiai
+      - REDIS_URL=redis://redis:6379/0
+      - LOG_LEVEL=INFO
+      - API_WEBHOOK_URL=http://host.docker.internal:4000/api/webhooks/render
+    volumes:
+      - worker_models:/app/models
+      - worker_storage:/app/storage
+      - worker_downloads:/app/downloads
+      - worker_output:/app/output
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    depends_on:
+      - redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ── Redis (Job Queue & Progress) ───────────────────────────────
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"  # Use 6380 to avoid conflicts with main compose
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_ml_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  worker_models:
+    driver: local
+  worker_storage:
+    driver: local
+  worker_downloads:
+    driver: local
+  worker_output:
+    driver: local
+  redis_ml_data:
+    driver: local
