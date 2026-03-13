@@ -5,8 +5,8 @@ import logging
 import os
 from typing import Dict, List, Tuple
 from torchvision.transforms import Compose, Resize, ToTensor, Normalize
-from src.config.config import settings
-from src.utils.device import autocast_context, gpu_memory_guard, clear_cache
+from config.config import settings
+from utils.device import autocast_context, gpu_memory_guard, clear_cache
 
 logger = logging.getLogger(__name__)
 

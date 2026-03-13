@@ -7,7 +7,7 @@ import numpy as np
 import logging
 from typing import List, Dict, Any, Optional
 import os
-from src.schemas.pipeline import AudioMood, AudioAnalysisResult
+from schemas.pipeline import AudioMood, AudioAnalysisResult
 
 logger = logging.getLogger(__name__)
 

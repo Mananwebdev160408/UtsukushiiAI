@@ -10,7 +10,7 @@ from PIL import Image, ImageStat
 import logging
 from typing import List, Tuple, Dict
 from collections import Counter
-from src.schemas.pipeline import (
+from schemas.pipeline import (
     MusicSuggestion, VisualFeatures, MangaGenre, AudioMood
 )
 

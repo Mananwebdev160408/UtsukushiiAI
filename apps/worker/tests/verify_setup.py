@@ -5,10 +5,10 @@ import logging
 # Add src to path
 sys.path.append(os.path.join(os.getcwd(), "src"))
 
-from src.config.config import settings
-from src.utils.device import get_device_info
-from src.models.yolo_detector import YOLODetector
-from src.services.audio_analyzer import AudioAnalyzer
+from config.config import settings
+from utils.device import get_device_info
+from models.yolo_detector import YOLODetector
+from services.audio_analyzer import AudioAnalyzer
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("Verification")

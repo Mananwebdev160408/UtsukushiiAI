@@ -20,9 +20,9 @@ import signal
 import tempfile
 import shutil
 
-from src.utils.logger import setup_logger
-from src.utils.device import get_device_info, clear_cache
-from src.config.config import settings
+from utils.logger import setup_logger
+from utils.device import get_device_info, clear_cache
+from config.config import settings
 
 # Initialize logger
 setup_logger()
@@ -94,7 +94,7 @@ async def health_check():
 
 # ── Render Endpoints ───────────────────────────────────────────────────
 
-from src.jobs.render_job import JobManager
+from jobs.render_job import JobManager
 
 
 @app.post("/render/submit")
@@ -150,7 +150,7 @@ async def suggest_music(request: MusicSuggestionRequest):
         raise HTTPException(status_code=400, detail=f"Manga file not found: {request.manga_path}")
 
     try:
-        from src.pipelines.render_pipeline import RenderPipeline
+        from pipelines.render_pipeline import RenderPipeline
         pipeline = RenderPipeline()
         suggestion = await pipeline.suggest_music(request.manga_path)
         return suggestion.model_dump()
@@ -170,7 +170,7 @@ async def suggest_music_from_upload(file: UploadFile = File(...)):
             content = await file.read()
             f.write(content)
 
-        from src.pipelines.render_pipeline import RenderPipeline
+        from pipelines.render_pipeline import RenderPipeline
         pipeline = RenderPipeline()
         suggestion = await pipeline.suggest_music(file_path)
         return suggestion.model_dump()

@@ -3,8 +3,8 @@ import os
 from PIL import Image
 import numpy as np
 import asyncio
-from src.pipelines.render_pipeline import RenderPipeline
-from src.schemas.pipeline import RenderSettings
+from pipelines.render_pipeline import RenderPipeline
+from schemas.pipeline import RenderSettings
 
 # Mocking parts of the pipeline for testing without full weights
 @pytest.fixture
@@ -54,8 +54,8 @@ async def test_full_pipeline_execution(test_assets):
         pass
 
 def test_yolo_sorting_logic():
-    from src.models.yolo_detector import YOLODetector
-    from src.schemas.pipeline import DetectionResult, BBox
+    from models.yolo_detector import YOLODetector
+    from schemas.pipeline import DetectionResult, BBox
     
     detector = YOLODetector()
     

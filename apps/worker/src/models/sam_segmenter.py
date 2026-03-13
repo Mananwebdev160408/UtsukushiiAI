@@ -3,10 +3,11 @@ import numpy as np
 from PIL import Image
 import logging
 import os
+
 from typing import List, Optional
-from src.config.config import settings
-from src.schemas.pipeline import BBox
-from src.utils.device import autocast_context, gpu_memory_guard
+from config.config import settings
+from schemas.pipeline import BBox
+from utils.device import autocast_context, gpu_memory_guard
 
 # SAM 2 import with graceful fallback
 try:

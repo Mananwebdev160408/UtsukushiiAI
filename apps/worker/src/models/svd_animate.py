@@ -9,8 +9,8 @@ import logging
 import os
 import numpy as np
 from typing import List, Optional
-from src.config.config import settings
-from src.utils.device import autocast_context, gpu_memory_guard, enable_memory_efficient_attention
+from config.config import settings
+from utils.device import autocast_context, gpu_memory_guard, enable_memory_efficient_attention
 
 logger = logging.getLogger(__name__)
 

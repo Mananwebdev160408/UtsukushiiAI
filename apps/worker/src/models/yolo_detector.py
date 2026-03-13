@@ -4,8 +4,8 @@ from PIL import Image
 from typing import List, Dict, Any
 import logging
 import os
-from src.config.config import settings
-from src.schemas.pipeline import DetectionResult, BBox
+from config.config import settings
+from schemas.pipeline import DetectionResult, BBox
 
 logger = logging.getLogger(__name__)
 

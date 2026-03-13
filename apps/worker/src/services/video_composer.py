@@ -11,10 +11,10 @@ import logging
 import shutil
 import json
 from typing import List, Dict, Any, Optional
-from src.schemas.pipeline import (
+from schemas.pipeline import (
     Panel, RenderSettings, TransitionEffect, QualityPreset, EffectsConfig
 )
-from src.config.config import settings
+from config.config import settings
 
 logger = logging.getLogger(__name__)
 

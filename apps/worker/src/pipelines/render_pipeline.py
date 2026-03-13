@@ -13,19 +13,19 @@ import time
 from typing import List, Callable, Optional
 from PIL import Image
 
-from src.models.yolo_detector import YOLODetector
-from src.models.sam_segmenter import SAMSegmenter
-from src.models.midas_estimator import MiDaSEstimator
-from src.models.svd_animate import SVDAnimator
-from src.services.audio_analyzer import AudioAnalyzer
-from src.services.video_composer import VideoComposer
-from src.services.music_suggester import MusicSuggester
-from src.schemas.pipeline import (
+from models.yolo_detector import YOLODetector
+from models.sam_segmenter import SAMSegmenter
+from models.midas_estimator import MiDaSEstimator
+from models.svd_animate import SVDAnimator
+from services.audio_analyzer import AudioAnalyzer
+from services.video_composer import VideoComposer
+from services.music_suggester import MusicSuggester
+from schemas.pipeline import (
     PipelineMetadata, Panel, RenderSettings, PipelineStage,
     JobStatus, MusicSuggestion, AudioAnalysisResult
 )
-from src.utils.storage import StorageHelper
-from src.utils.device import clear_cache, get_memory_usage
+from utils.storage import StorageHelper
+from utils.device import clear_cache, get_memory_usage
 
 logger = logging.getLogger(__name__)
 
@@ -156,7 +156,7 @@ class RenderPipeline:
 
             if not detections:
                 logger.warning("No panels detected. Using full image as single panel.")
-                from src.schemas.pipeline import BBox, DetectionResult
+                from schemas.pipeline import BBox, DetectionResult
                 detections = [DetectionResult(
                     bbox=BBox(x=0.0, y=0.0, width=1.0, height=1.0),
                     confidence=1.0,

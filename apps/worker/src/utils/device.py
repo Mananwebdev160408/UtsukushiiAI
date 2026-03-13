@@ -29,7 +29,8 @@ def get_device_info() -> dict:
     if device_type == "cuda":
         prop = torch.cuda.get_device_properties(0)
         allocated = torch.cuda.memory_allocated(0)
-        total = prop.total_mem
+        # torch exposes total_memory on current versions; keep fallback for compatibility.
+        total = getattr(prop, "total_memory", getattr(prop, "total_mem", 0))
         info.update({
             "name": prop.name,
             "memory_total": total // (1024 * 1024),

@@ -1,7 +1,7 @@
 import os
 import shutil
 import logging
-from src.config.config import settings
+from config.config import settings
 
 logger = logging.getLogger(__name__)
 

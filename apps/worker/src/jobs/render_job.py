@@ -7,10 +7,10 @@ import asyncio
 import logging
 import time
 import os
-from typing import Dict, Any, Optional
-from src.pipelines.render_pipeline import RenderPipeline, PipelineCancelled
-from src.schemas.pipeline import RenderSettings, JobStatus, PipelineStage
-from src.config.config import settings
+from typing import Dict, Any, Optional, List
+from pipelines.render_pipeline import RenderPipeline, PipelineCancelled
+from schemas.pipeline import RenderSettings, JobStatus, PipelineStage
+from config.config import settings
 
 logger = logging.getLogger(__name__)
 
