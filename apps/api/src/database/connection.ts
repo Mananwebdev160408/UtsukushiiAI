@@ -1,1 +1,1 @@
-export * from "@utsukushii/database";
+export * from "@utsukushii/database/connection";

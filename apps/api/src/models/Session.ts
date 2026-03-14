@@ -1,1 +1,1 @@
-export { Session, ISession } from "@utsukushii/database";
+export { Session, ISession } from "@utsukushii/database/models/Session";

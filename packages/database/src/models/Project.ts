@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from "mongoose";
-import { Project as ProjectType } from "@utsukushii/shared";
+import { Project as ProjectType } from "../../../shared/src/types/project";
 
 export interface IProject
   extends

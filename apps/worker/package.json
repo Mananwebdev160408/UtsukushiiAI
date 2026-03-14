@@ -1,0 +1,11 @@
+{
+  "name": "@utsukushii/worker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "UtsukushiiAI ML Worker — FastAPI Python service",
+  "scripts": {
+    "dev": ".\\venv\\Scripts\\python.exe -m uvicorn main:app --app-dir src --reload --port 8001",
+    "start": ".\\venv\\Scripts\\python.exe -m uvicorn main:app --app-dir src --port 8001",
+    "lint": "echo No lint configured for Python worker"
+  }
+}

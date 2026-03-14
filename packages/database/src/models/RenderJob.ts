@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from "mongoose";
-import { RenderJob as RenderJobType } from "@utsukushii/shared";
+import { RenderJob as RenderJobType } from "../../../shared/src/types/render";
 
 export interface IRenderJob
   extends

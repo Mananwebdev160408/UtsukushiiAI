@@ -1,1 +1,1 @@
-export { panelRepository } from "@utsukushii/database";
+export { panelRepository } from "@utsukushii/database/repositories/PanelRepository";

@@ -1,1 +1,1 @@
-export { AudioAnalysis, IAudioAnalysis } from "@utsukushii/database";
+export { AudioAnalysis, IAudioAnalysis } from "@utsukushii/database/models/AudioAnalysis";

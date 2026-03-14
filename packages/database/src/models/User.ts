@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from "mongoose";
-import { User as UserType } from "@utsukushii/shared";
+import { User as UserType } from "../../../shared/src/types/auth";
 
 export interface IUser extends Document, Omit<UserType, "id"> {
   _id: any;

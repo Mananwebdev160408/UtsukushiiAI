@@ -20,6 +20,14 @@ import signal
 import tempfile
 import shutil
 
+# Ensure Torch cache initialization works in shells where username vars are absent.
+if not os.environ.get("USERNAME"):
+    os.environ["USERNAME"] = os.environ.get("USER", "worker")
+os.environ.setdefault(
+    "TORCHINDUCTOR_CACHE_DIR",
+    os.path.join(tempfile.gettempdir(), "torchinductor_worker"),
+)
+
 from utils.logger import setup_logger
 from utils.device import get_device_info, clear_cache
 from config.config import settings

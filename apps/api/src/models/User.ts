@@ -1,1 +1,1 @@
-export { User, IUser } from "@utsukushii/database";
+export { User, IUser } from "@utsukushii/database/models/User";

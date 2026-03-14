@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from "mongoose";
-import { Panel as PanelType } from "@utsukushii/shared";
+import { Panel as PanelType } from "../../../shared/src/types/panel";
 
 export interface IPanel
   extends

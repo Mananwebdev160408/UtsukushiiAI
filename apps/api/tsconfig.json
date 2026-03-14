@@ -16,7 +16,11 @@
     "sourceMap": true,
     "baseUrl": "./src",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@utsukushii/shared": ["../../../packages/shared/src/index.ts"],
+      "@utsukushii/database": ["../../../packages/database/src/index.ts"],
+      "@utsukushii/shared/*": ["../../../packages/shared/src/*"],
+      "@utsukushii/database/*": ["../../../packages/database/src/*"]
     },
     "types": ["node"]
   },

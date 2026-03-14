@@ -1,1 +1,1 @@
-export { userRepository } from "@utsukushii/database";
+export { userRepository } from "@utsukushii/database/repositories/UserRepository";
