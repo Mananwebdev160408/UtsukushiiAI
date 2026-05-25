@@ -167,6 +167,46 @@ async def suggest_music(request: MusicSuggestionRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+        class DetectRequest(BaseModel):
+            project_id: str
+            manga_path: str
+            options: Optional[Dict[str, Any]] = None
+
+
+        @app.post("/detect")
+        async def detect_panels(request: DetectRequest):
+            """Runs panel detection on a single manga page and returns normalized bboxes."""
+            if not os.path.exists(request.manga_path):
+                raise HTTPException(status_code=400, detail=f"Manga file not found: {request.manga_path}")
+
+            try:
+                from models.yolo_detector import YOLODetector
+                from PIL import Image
+
+                image = Image.open(request.manga_path).convert("RGB")
+                detector = YOLODetector()
+                conf = 0.45
+                if request.options and isinstance(request.options, dict) and request.options.get("confidence"):
+                    try:
+                        conf = float(request.options.get("confidence"))
+                    except Exception:
+                        pass
+
+                detections = detector.detect(image, conf_threshold=conf)
+                # Return pydantic-friendly dicts
+                payload = [d.model_dump() if hasattr(d, "model_dump") else {
+                    "bbox": d.bbox.dict() if hasattr(d.bbox, "dict") else d.bbox,
+                    "confidence": float(d.confidence),
+                    "class_id": int(d.class_id),
+                    "label": getattr(d, "label", None),
+                } for d in detections]
+
+                return {"job_id": request.project_id, "detections": payload}
+            except Exception as e:
+                logger.error(f"Panel detection failed: {e}")
+                raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/suggest/music/upload")
 async def suggest_music_from_upload(file: UploadFile = File(...)):
     """Upload a manga image and get music suggestions."""

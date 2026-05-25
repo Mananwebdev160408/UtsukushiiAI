@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { projectService } from "../services";
+import { detectService } from "../services/detectService";
 
 export const create = async (
   req: Request,
@@ -75,6 +76,24 @@ export const remove = async (
       req.params.id as string,
     );
     res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const detect = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const result = await detectService.startDetect(req.user!.userId, req.params.id as string, req.body || {});
+    // If worker returned panels and detectService persisted them, return them to the client
+    if (result && (result as any).panels) {
+      res.status(200).json({ status: "success", data: { job: (result as any).job, panels: (result as any).panels } });
+    } else {
+      res.status(202).json({ status: "accepted", data: { job: result } });
+    }
   } catch (error) {
     next(error);
   }

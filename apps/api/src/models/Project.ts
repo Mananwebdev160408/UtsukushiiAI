@@ -1,1 +1,1 @@
-export { Project, IProject } from "@utsukushii/database/models/Project";
+export { Project, IProject } from "@utsukushii/database";

@@ -1,1 +1,1 @@
-export { Panel, IPanel } from "@utsukushii/database/models/Panel";
+export { Panel, IPanel } from "@utsukushii/database";

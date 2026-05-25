@@ -1,6 +1,6 @@
 import { renderJobRepository } from "../repositories/renderJobRepository";
 import { projectService } from "./projectService";
-import { NotFoundError } from "../errors";
+import { ForbiddenError, NotFoundError } from "../errors";
 import { logger } from "../utils/logger";
 import { AppError } from "../errors";
 import { config } from "../config";
@@ -17,7 +17,7 @@ export class RenderService {
       userId,
       projectId,
       settings: settings || project.settings,
-      status: "pending",
+      status: "queued",
       progress: 0,
     });
 
@@ -31,6 +31,9 @@ export class RenderService {
           code: "WORKER_DISPATCH_FAILED",
           message: error?.message || "Worker dispatch failed",
         },
+      });
+      await projectService.updateProject(userId, projectId, {
+        status: "error",
       });
       throw error;
     }
@@ -97,12 +100,15 @@ export class RenderService {
     }
 
     await renderJobRepository.updateStatus(job._id.toString(), "processing", 1);
+    await projectService.updateProject(job.userId, job.projectId, {
+      status: "processing",
+    });
   }
 
   async getRenderStatus(userId: string, jobId: string) {
     const job = await renderJobRepository.findById(jobId);
     if (!job) throw new NotFoundError("RenderJob", jobId);
-    if (job.userId !== userId) throw new Error("Forbidden"); // simplified for now
+    if (job.userId !== userId) throw new ForbiddenError();
     return job;
   }
 
@@ -116,7 +122,11 @@ export class RenderService {
   async cancelRender(userId: string, jobId: string) {
     const job = await this.getRenderStatus(userId, jobId);
     if (job.status === "completed" || job.status === "failed") {
-      throw new Error("Cannot cancel a finished job");
+      throw new AppError(
+        "Cannot cancel a finished job",
+        400,
+        "JOB_ALREADY_FINISHED",
+      );
     }
 
     try {
@@ -127,7 +137,12 @@ export class RenderService {
       logger.warn(`Worker cancel failed for ${jobId}, applying local cancel only`);
     }
 
-    return renderJobRepository.updateStatus(jobId, "cancelled");
+    const cancelledJob = await renderJobRepository.updateStatus(jobId, "cancelled");
+    await projectService.updateProject(userId, job.projectId, {
+      status: "draft",
+    });
+
+    return cancelledJob;
   }
 }
 

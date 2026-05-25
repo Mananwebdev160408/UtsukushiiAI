@@ -1,6 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
+import { useCanvasStore } from '@/stores/canvasStore';
+import { useProject } from '@/hooks/useProject';
+import { api } from '@/lib/api/client';
 
 import {
   Settings,
@@ -19,6 +23,17 @@ import { cn } from "@/lib/utils/cn";
 
 export function PanelEditor() {
   const [activeTab, setActiveTab] = useState("Depth EST");
+  const params = useParams();
+  const projectId = String(params.id || "");
+  const selectedPanelId = useCanvasStore((s) => s.selectedPanelId);
+  const { panels, setPanels } = useProject(projectId);
+
+  const panel = panels?.find((p) => p.id === selectedPanelId) || null;
+  const [label, setLabel] = useState(panel?.label || '');
+
+  useEffect(() => {
+    setLabel(panel?.label || '');
+  }, [panel?.id]);
 
   return (
     <aside className="w-full h-full border-l-4 border-black dark:border-white bg-[#1f230f] flex flex-col z-40 relative font-display overflow-hidden">
@@ -85,10 +100,24 @@ export function PanelEditor() {
 
         {/* Action Button */}
         <div className="pt-6">
-          <button className="w-full py-5 bg-white text-black font-black uppercase tracking-[0.2em] text-xs border-4 border-black shadow-hard hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-3 italic">
-            <Scissors className="w-5 h-5" />
-            Split Layers
-          </button>
+          <div className="space-y-2">
+            <button className="w-full py-3 bg-white text-black font-black uppercase tracking-[0.2em] text-xs border-4 border-black shadow-hard hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-3 italic" onClick={async () => {
+              if (!panel || !projectId) return;
+              try {
+                await api.projects.panels.update(projectId, panel.id, { label });
+                setPanels(panels.map(p => p.id === panel.id ? { ...p, label } : p));
+              } catch (err) {
+                console.error('Failed to update panel', err);
+              }
+            }}>
+              <Scissors className="w-5 h-5" />
+              Save Panel
+            </button>
+            <button className="w-full py-3 bg-black text-white font-black uppercase tracking-[0.2em] text-xs border-4 border-black shadow-hard hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-3 italic">
+              <Search className="w-5 h-5" />
+              Analyze Panel
+            </button>
+          </div>
         </div>
 
         {/* Info Box */}

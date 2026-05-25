@@ -14,14 +14,7 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "baseUrl": "./src",
-    "paths": {
-      "@/*": ["./*"],
-      "@utsukushii/shared": ["../../../packages/shared/src/index.ts"],
-      "@utsukushii/database": ["../../../packages/database/src/index.ts"],
-      "@utsukushii/shared/*": ["../../../packages/shared/src/*"],
-      "@utsukushii/database/*": ["../../../packages/database/src/*"]
-    },
+    "ignoreDeprecations": "5.0",
     "types": ["node"]
   },
   "references": [

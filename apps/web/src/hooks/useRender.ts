@@ -1,20 +1,13 @@
 'use client';
 
 import { useEffect, useRef, useCallback } from 'react';
+import { api } from '@/lib/api/client';
+import {
+  connectRenderSocket,
+  onRenderEvent,
+  offRenderEvent,
+} from '@/lib/socket/renderSocket';
 import { useRenderStore } from '@/stores/renderStore';
-import type { RenderSettings } from '@/types';
-
-const getAccessToken = () => {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem('utsukushii-auth');
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    return parsed?.state?.tokens?.accessToken || null;
-  } catch {
-    return null;
-  }
-};
 
 /**
  * Custom hook for render job management.
@@ -36,35 +29,24 @@ export function useRender(projectId?: string) {
     resetSettings,
   } = useRenderStore();
 
-  const wsRef = useRef<WebSocket | null>(null);
-
   // Submit render job
-  const submitRender = useCallback(async (mangaPath: string, audioPath: string) => {
+  const submitRender = useCallback(async (_mangaPath: string, _audioPath: string) => {
     if (!projectId) return;
     setSubmitting(true);
 
     try {
-      const token = getAccessToken();
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/v1/render/start`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      const response = await api.render.start({
+        projectId,
+        settings: {
+          quality: settings.quality,
+          fps: settings.fps,
+          resolution: `${settings.width}x${settings.height}`,
+          format: settings.codec === 'libx265' ? 'webm' : 'mp4',
+          effects: settings.effects,
         },
-        body: JSON.stringify({
-          projectId,
-          settings: {
-            quality: settings.quality,
-            fps: settings.fps,
-            resolution: `${settings.width}x${settings.height}`,
-            format: settings.codec === 'libx265' ? 'webm' : 'mp4',
-            effects: settings.effects,
-          },
-        }),
       });
 
-      const data = await response.json();
-      const jobId = data?.data?.job?._id || data?.data?.job?.id;
+      const jobId = response.data?._id || response.data?.id;
       if (jobId) {
         setCurrentJob({
           id: jobId,
@@ -90,11 +72,7 @@ export function useRender(projectId?: string) {
   const cancelRender = useCallback(async () => {
     if (!currentJob?.id) return;
     try {
-      const token = getAccessToken();
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/v1/render/${currentJob.id}`, {
-        method: 'DELETE',
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      });
+      await api.render.cancel(currentJob.id);
       setCurrentJob(currentJob ? { ...currentJob, status: 'cancelled' } : null);
     } catch (err) {
       console.error('Failed to cancel render:', err);
@@ -104,21 +82,19 @@ export function useRender(projectId?: string) {
   // Poll for progress (fallback when WebSocket is not available)
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  const normalizeRenderStatus = (status?: string) => {
+    if (status === 'pending') return 'queued';
+    return status || 'queued';
+  };
+
   const startProgressPolling = useCallback((jobId: string) => {
     if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
 
     pollIntervalRef.current = setInterval(async () => {
       try {
-        const token = getAccessToken();
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/v1/render/${jobId}`,
-          {
-            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-          },
-        );
-        const data = await res.json();
-        const job = data?.data?.job;
-        const status = job?.status;
+        const response = await api.render.status(jobId);
+        const job = response.data;
+        const status = normalizeRenderStatus(job?.status);
 
         if (status === 'completed') {
           completeJob(job?.outputUrl || '', job?.duration || 0, job?.fileSize || 0);
@@ -127,10 +103,17 @@ export function useRender(projectId?: string) {
           failJob(job?.error?.message || 'Render failed');
           if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
         } else if (status === 'cancelled') {
-          setCurrentJob(currentJob ? { ...currentJob, status: 'cancelled' } : null);
+          setCurrentJob({
+            id: job?.id || job?._id || jobId,
+            projectId: job?.projectId || projectId || '',
+            status: 'cancelled',
+            progress: job?.progress || 0,
+            currentStage: 'cancelled',
+            message: 'Render cancelled',
+          });
           if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
         } else {
-          updateJobProgress(job?.progress || 0, status || '', 'Rendering in progress');
+          updateJobProgress(job?.progress || 0, status, 'Rendering in progress');
         }
       } catch {
         // Silent fail — will retry next interval
@@ -145,18 +128,69 @@ export function useRender(projectId?: string) {
     };
   }, []);
 
+  // WebSocket listeners for real-time render updates
+  useEffect(() => {
+    const handleProgress = (data: any) => {
+      try {
+        if (data.jobId === currentJob?.id || data.projectId === projectId) {
+          updateJobProgress(data.progress || 0, data.status, data.message || '');
+        }
+      } catch {}
+    };
+
+    const handleComplete = (data: any) => {
+      try {
+        if (data.jobId === currentJob?.id || data.projectId === projectId) {
+          completeJob(data.outputUrl || '', data.duration || 0, data.fileSize || 0);
+          if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+        }
+      } catch {}
+    };
+
+    const handleError = (data: any) => {
+      try {
+        if (data.jobId === currentJob?.id || data.projectId === projectId) {
+          failJob(data.error?.message || 'Render failed');
+          if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+        }
+      } catch {}
+    };
+
+    const handleCancelled = (data: any) => {
+      try {
+        if (data.jobId === currentJob?.id || data.projectId === projectId) {
+          setCurrentJob({
+            id: data.jobId || currentJob?.id || '',
+            projectId: data.projectId || projectId || '',
+            status: 'cancelled',
+            progress: data.progress || 0,
+            currentStage: 'cancelled',
+            message: 'Render cancelled',
+          });
+          if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+        }
+      } catch {}
+    };
+
+    connectRenderSocket();
+    onRenderEvent('render:progress', handleProgress);
+    onRenderEvent('render:complete', handleComplete);
+    onRenderEvent('render:error', handleError);
+    onRenderEvent('render:cancelled', handleCancelled);
+
+    return () => {
+      offRenderEvent('render:progress', handleProgress);
+      offRenderEvent('render:complete', handleComplete);
+      offRenderEvent('render:error', handleError);
+      offRenderEvent('render:cancelled', handleCancelled);
+    };
+  }, [projectId, currentJob?.id, updateJobProgress, completeJob, failJob, setCurrentJob]);
+
   // Get music suggestion
   const suggestMusic = useCallback(async (mangaPath: string) => {
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_ML_WORKER_URL || 'http://localhost:8001'}/suggest/music`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ manga_path: mangaPath }),
-        }
-      );
-      return await res.json();
+      const res = await api.ml.suggestMusic(mangaPath);
+      return res.data;
     } catch {
       return null;
     }

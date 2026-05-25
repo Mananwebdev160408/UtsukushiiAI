@@ -16,6 +16,8 @@ import {
 import Link from "next/link";
 import { MangaUploader } from "@/components/forge/MangaUploader/MangaUploader";
 import { AudioUploader } from "@/components/forge/AudioUploader/AudioUploader";
+import { UploadProgress } from "@/components/forge/UploadProgress/UploadProgress";
+import { MetadataInput, type MangaMetadata } from "@/components/forge/MetadataInput/MetadataInput";
 import { api } from "@/lib/api/client";
 import { cn } from "@/lib/utils/cn";
 import { motion, AnimatePresence } from "framer-motion";
@@ -30,6 +32,12 @@ export default function NewProjectPage() {
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
   const [aiStep, setAiStep] = useState(0);
   const [aiProgress, setAiProgress] = useState(0);
+  const [metadata, setMetadata] = useState<MangaMetadata>({
+    author: "",
+    genre: "",
+    series: "",
+    tags: "",
+  });
 
   const aiPhases = [
     "Analyzing Manga Composition...",
@@ -179,6 +187,17 @@ export default function NewProjectPage() {
                     onUploadComplete={() => setMangaUploaded(true)}
                   />
                 </div>
+
+                {/* Metadata section — shown after upload */}
+                {mangaUploaded && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <MetadataInput value={metadata} onChange={setMetadata} />
+                  </motion.div>
+                )}
               </motion.div>
             )}
 
@@ -417,7 +436,7 @@ export default function NewProjectPage() {
 
             {step === 5 && (
               <motion.div
-                key="step4"
+                key="step5"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="h-[500px] flex flex-col items-center justify-center text-center space-y-12 relative overflow-hidden"
@@ -425,50 +444,12 @@ export default function NewProjectPage() {
                 {/* Background Glow */}
                 <div className="absolute inset-0 bg-primary/5 blur-[120px] rounded-full animate-pulse" />
 
-                <div className="relative">
-                  <div className="w-32 h-32 bg-black border-4 border-primary flex items-center justify-center rotate-45 animate-spin-slow">
-                    <Zap className="w-12 h-12 text-primary -rotate-45" />
-                  </div>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-40 h-40 border-t-4 border-secondary rounded-full animate-spin" />
-                  </div>
-                </div>
-
-                <div className="space-y-4 relative z-10">
-                  <h2 className="text-4xl font-black uppercase italic tracking-tighter text-white">
-                    AI_SYNTHESIS_IN_PROGRESS
-                  </h2>
-                  <p className="text-primary font-mono text-sm uppercase tracking-[0.3em] h-6">
-                    {aiPhases[aiStep]}
-                  </p>
-                </div>
-
-                <div className="w-full max-w-xl space-y-2 relative z-10">
-                  <div className="flex justify-between font-mono text-[10px] text-white/40 uppercase font-black">
-                    <span>Cluster_Compute_Load</span>
-                    <span>{aiProgress}%</span>
-                  </div>
-                  <div className="h-4 bg-black border-2 border-white/20 p-1">
-                    <div
-                      className="h-full bg-primary transition-all duration-100 ease-out"
-                      style={{ width: `${aiProgress}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-8 pt-8 opacity-20 grayscale">
-                  <div className="flex flex-col items-center gap-2">
-                    <Layers className="w-6 h-6" />
-                    <span className="text-[8px] font-mono">PANEL_DECON</span>
-                  </div>
-                  <div className="flex flex-col items-center gap-2">
-                    <Music className="w-6 h-6" />
-                    <span className="text-[8px] font-mono">BEAT_SYNC</span>
-                  </div>
-                  <div className="flex flex-col items-center gap-2">
-                    <Rocket className="w-6 h-6" />
-                    <span className="text-[8px] font-mono">RENDER_ENV</span>
-                  </div>
+                <div className="w-full max-w-xl relative z-10">
+                  <UploadProgress
+                    progress={aiProgress}
+                    phaseIndex={aiStep}
+                    fileName={projectName}
+                  />
                 </div>
               </motion.div>
             )}

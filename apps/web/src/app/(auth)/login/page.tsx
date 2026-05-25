@@ -76,7 +76,7 @@ export default function LoginPage() {
             />
             Remember me
           </label>
-          <Link href="#" className="hover:text-primary transition-colors">
+          <Link href="/forgot-password" className="hover:text-primary transition-colors">
             Forgot password?
           </Link>
         </div>

@@ -1,1 +1,1 @@
-export { RenderJob, IRenderJob } from "@utsukushii/database/models/RenderJob";
+export { RenderJob, IRenderJob } from "@utsukushii/database";

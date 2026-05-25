@@ -1,10 +1,11 @@
 import { NextFunction, Request, Response } from "express";
 import { projectRepository, renderJobRepository } from "../repositories";
+import { emitToUser } from "../services/websocketService";
 import { logger } from "../utils/logger";
 
 type WorkerRenderWebhookPayload = {
   project_id: string;
-  status: "processing" | "completed" | "failed" | "cancelled";
+  status: "queued" | "processing" | "completed" | "failed" | "cancelled";
   progress?: number;
   output_url?: string;
   duration?: number;
@@ -19,12 +20,12 @@ export const handleRenderWebhook = async (
 ) => {
   try {
     const payload = req.body as WorkerRenderWebhookPayload;
-    const jobId = payload?.project_id;
+    const jobId = payload?.project_id || (req.body as any)?.job_id;
 
     if (!jobId) {
       return res
         .status(400)
-        .json({ status: "error", message: "project_id is required" });
+        .json({ status: "error", message: "project_id or job_id is required" });
     }
 
     const job = await renderJobRepository.findById(jobId);
@@ -58,12 +59,43 @@ export const handleRenderWebhook = async (
 
     await renderJobRepository.update(jobId, updateData);
 
+    // Emit socket events to the job owner so frontend can react in real-time
+    try {
+      const userId = (job as any).userId as string | undefined;
+      if (userId) {
+        const basePayload = { jobId, projectId: job.projectId, status: payload.status };
+
+        if (payload.status === "queued" || payload.status === "processing") {
+          emitToUser(userId, "render:progress", { ...basePayload, progress: payload.progress });
+        } else if (payload.status === "completed") {
+          emitToUser(userId, "render:complete", {
+            ...basePayload,
+            // Provide both legacy and frontend-friendly fields
+            outputUrl: updateData.outputUrl,
+            resultUrl: updateData.outputUrl,
+            duration: updateData.duration,
+            durationSeconds: updateData.duration,
+            fileSize: updateData.fileSize,
+            fileSizeBytes: updateData.fileSize,
+          });
+        } else if (payload.status === "failed") {
+          emitToUser(userId, "render:error", { ...basePayload, error: updateData.error });
+        } else if (payload.status === "cancelled") {
+          emitToUser(userId, "render:cancelled", basePayload);
+        }
+      }
+    } catch (emitErr) {
+      logger.warn(`Failed to emit websocket event for job ${jobId}: ${emitErr}`);
+    }
+
     if (payload.status === "completed") {
       await projectRepository.update(job.projectId, { status: "ready" });
     } else if (payload.status === "failed") {
       await projectRepository.update(job.projectId, { status: "error" });
-    } else if (payload.status === "processing") {
+    } else if (payload.status === "queued" || payload.status === "processing") {
       await projectRepository.update(job.projectId, { status: "processing" });
+    } else if (payload.status === "cancelled") {
+      await projectRepository.update(job.projectId, { status: "draft" });
     }
 
     return res.status(200).json({ status: "success" });

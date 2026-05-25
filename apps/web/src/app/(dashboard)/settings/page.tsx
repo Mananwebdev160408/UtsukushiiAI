@@ -12,6 +12,15 @@ import {
   Database,
   Key,
   HardDrive,
+  Palette,
+  Crown,
+  Webhook,
+  Youtube,
+  MessageCircle,
+  Sun,
+  Moon,
+  CheckCircle2,
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
@@ -29,6 +38,9 @@ export default function SettingsHubPage() {
   const tabs = [
     { id: "personal", name: "Identity & Profile", icon: User },
     { id: "ai", name: "Compute Node (AI)", icon: Cpu },
+    { id: "billing", name: "Subscription", icon: Crown },
+    { id: "integrations", name: "Integrations", icon: Webhook },
+    { id: "appearance", name: "Appearance", icon: Palette },
   ];
 
   return (
@@ -264,6 +276,265 @@ export default function SettingsHubPage() {
                 <div className="flex justify-end pt-6">
                   <button className="bg-secondary text-black border-4 border-black px-10 py-4 font-display font-black uppercase text-xl italic shadow-hard hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
                     Re-Init Node
+                  </button>
+                </div>
+              </section>
+            )}
+
+            {/* ── Billing Tab (11.2) ─────────────────────────────────── */}
+            {activeTab === "Subscription" && (
+              <section className="bg-surface-dark border-4 border-black p-8 md:p-12 shadow-hard space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="flex justify-between items-center border-b-4 border-white/10 pb-6">
+                  <div>
+                    <h2 className="font-display font-black text-3xl md:text-4xl uppercase italic text-white tracking-widest">
+                      Subscription Matrix
+                    </h2>
+                    <p className="text-[10px] font-mono text-white/20 uppercase tracking-widest mt-2">
+                      Current Tier: <span className="text-primary">FREE_TIER</span> // CREDITS: 0
+                    </p>
+                  </div>
+                  <Crown className="w-10 h-10 text-primary" />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {[
+                    {
+                      name: "Free",
+                      price: "$0",
+                      period: "/month",
+                      color: "border-white/20",
+                      highlight: false,
+                      features: ["3 Projects", "720p Export", "5 Renders/month", "Community Support"],
+                    },
+                    {
+                      name: "Pro",
+                      price: "$19",
+                      period: "/month",
+                      color: "border-primary",
+                      highlight: true,
+                      features: ["Unlimited Projects", "4K Export", "50 Renders/month", "Priority Support", "Custom Presets", "Beat Sync AI"],
+                    },
+                    {
+                      name: "Elite",
+                      price: "$49",
+                      period: "/month",
+                      color: "border-secondary",
+                      highlight: false,
+                      features: ["Everything in Pro", "API Access", "Dedicated GPU", "White-label Export", "Custom Models", "SLA Guarantee"],
+                    },
+                  ].map((tier) => (
+                    <div
+                      key={tier.name}
+                      className={cn(
+                        "border-4 p-8 relative transition-all hover:-translate-y-1 hover:shadow-neo",
+                        tier.highlight
+                          ? "bg-primary/10 border-primary shadow-hard"
+                          : "bg-black/40 " + tier.color,
+                      )}
+                    >
+                      {tier.highlight && (
+                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-black font-black text-[10px] uppercase px-4 py-1 border-2 border-black tracking-widest">
+                          MOST POPULAR
+                        </div>
+                      )}
+                      <h3 className={cn("font-display font-black text-3xl uppercase italic mb-1", tier.highlight ? "text-primary" : "text-white")}>
+                        {tier.name}
+                      </h3>
+                      <div className="flex items-end gap-1 mb-6">
+                        <span className="font-display font-black text-5xl text-white">{tier.price}</span>
+                        <span className="font-mono text-xs text-white/40 mb-2">{tier.period}</span>
+                      </div>
+                      <ul className="space-y-3 mb-8">
+                        {tier.features.map((f) => (
+                          <li key={f} className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-widest text-white/60">
+                            <CheckCircle2 className={cn("w-4 h-4 shrink-0", tier.highlight ? "text-primary" : "text-white/30")} />
+                            {f}
+                          </li>
+                        ))}
+                      </ul>
+                      <button
+                        className={cn(
+                          "w-full py-3 font-display font-black uppercase italic border-4 border-black transition-all hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none",
+                          tier.highlight
+                            ? "bg-primary text-black shadow-hard"
+                            : "bg-white/5 text-white hover:bg-white/10",
+                        )}
+                      >
+                        {tier.name === "Free" ? "Current Plan" : "Upgrade"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* ── Integrations Tab (11.3) ────────────────────────────── */}
+            {activeTab === "Integrations" && (
+              <section className="bg-surface-dark border-4 border-black p-8 md:p-12 shadow-hard space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="flex justify-between items-center border-b-4 border-white/10 pb-6">
+                  <div>
+                    <h2 className="font-display font-black text-3xl md:text-4xl uppercase italic text-white tracking-widest">
+                      Integration Hub
+                    </h2>
+                    <p className="text-[10px] font-mono text-white/20 uppercase tracking-widest mt-2">
+                      Connect external services // NODE: READY
+                    </p>
+                  </div>
+                  <Webhook className="w-10 h-10 text-secondary" />
+                </div>
+
+                <div className="space-y-8">
+                  {/* Discord */}
+                  <div className="bg-black/40 border-4 border-white/10 p-8 space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-[#5865F2] flex items-center justify-center border-2 border-black shadow-hard-xs shrink-0">
+                        <MessageCircle className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-display font-black text-xl uppercase italic text-white">Discord Webhook</h3>
+                        <p className="font-mono text-[10px] text-white/30 uppercase tracking-widest">Get render notifications in your Discord server</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="font-mono text-[10px] text-white/40 uppercase tracking-[0.3em] font-black block">Webhook URL</label>
+                      <div className="flex gap-3">
+                        <input
+                          id="discord-webhook-url"
+                          type="url"
+                          placeholder="https://discord.com/api/webhooks/..."
+                          className="flex-1 bg-black border-4 border-white/10 px-4 py-3 text-white font-mono text-sm outline-none focus:border-[#5865F2] transition-all placeholder-white/10"
+                        />
+                        <button className="px-6 bg-[#5865F2] text-white border-4 border-black font-black uppercase text-xs shadow-hard-xs hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all">
+                          Test
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* YouTube */}
+                  <div className="bg-black/40 border-4 border-white/10 p-8 space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-[#FF0000] flex items-center justify-center border-2 border-black shadow-hard-xs shrink-0">
+                        <Youtube className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-display font-black text-xl uppercase italic text-white">YouTube API</h3>
+                        <p className="font-mono text-[10px] text-white/30 uppercase tracking-widest">Direct upload rendered videos to your channel</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="font-mono text-[10px] text-white/40 uppercase tracking-[0.3em] font-black block">API Key</label>
+                      <div className="flex gap-3">
+                        <input
+                          id="youtube-api-key"
+                          type="password"
+                          placeholder="AIza..."
+                          className="flex-1 bg-black border-4 border-white/10 px-4 py-3 text-white font-mono text-sm outline-none focus:border-[#FF0000] transition-all placeholder-white/10"
+                        />
+                        <button className="px-6 bg-[#FF0000] text-white border-4 border-black font-black uppercase text-xs shadow-hard-xs hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all">
+                          Connect
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* ── Appearance Tab (11.4) ──────────────────────────────── */}
+            {activeTab === "Appearance" && (
+              <section className="bg-surface-dark border-4 border-black p-8 md:p-12 shadow-hard space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="flex justify-between items-center border-b-4 border-white/10 pb-6">
+                  <div>
+                    <h2 className="font-display font-black text-3xl md:text-4xl uppercase italic text-white tracking-widest">
+                      Visual Interface
+                    </h2>
+                    <p className="text-[10px] font-mono text-white/20 uppercase tracking-widest mt-2">
+                      Customize appearance parameters
+                    </p>
+                  </div>
+                  <Palette className="w-10 h-10 text-accent" />
+                </div>
+
+                <div className="space-y-10">
+                  {/* Dark/Light Mode */}
+                  <div className="space-y-4">
+                    <h3 className="font-mono text-[10px] text-white/40 uppercase tracking-[0.4em] font-black">Color Mode</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      {[
+                        { id: "dark", label: "Dark Mode", icon: Moon, desc: "Forge Aesthetic" },
+                        { id: "light", label: "Light Mode", icon: Sun, desc: "Manga Prints" },
+                      ].map((mode) => (
+                        <button
+                          key={mode.id}
+                          className={cn(
+                            "p-6 border-4 flex flex-col items-center gap-3 transition-all group",
+                            mode.id === "dark"
+                              ? "bg-primary/10 border-primary shadow-hard"
+                              : "bg-white/5 border-white/10 hover:border-white/30",
+                          )}
+                        >
+                          <mode.icon className={cn("w-8 h-8", mode.id === "dark" ? "text-primary" : "text-white/40")} />
+                          <div className="text-center">
+                            <p className={cn("font-black uppercase italic text-lg", mode.id === "dark" ? "text-primary" : "text-white")}>
+                              {mode.label}
+                            </p>
+                            <p className="font-mono text-[9px] text-white/30 uppercase mt-1">{mode.desc}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Accent Colors */}
+                  <div className="space-y-4">
+                    <h3 className="font-mono text-[10px] text-white/40 uppercase tracking-[0.4em] font-black">Accent Color</h3>
+                    <div className="flex flex-wrap gap-3">
+                      {[
+                        { label: "Neon Lime", value: "#ccff00" },
+                        { label: "Hot Magenta", value: "#ff00ff" },
+                        { label: "Cyber Cyan", value: "#00ffff" },
+                        { label: "Blood Orange", value: "#ff4500" },
+                        { label: "Electric Blue", value: "#0077ff" },
+                        { label: "Gold", value: "#ffd700" },
+                      ].map((color) => (
+                        <button
+                          key={color.value}
+                          title={color.label}
+                          className={cn(
+                            "w-12 h-12 border-4 transition-all hover:scale-110",
+                            color.value === "#ccff00" ? "border-black shadow-hard" : "border-white/20 hover:border-white/60",
+                          )}
+                          style={{ backgroundColor: color.value }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Font Size */}
+                  <div className="space-y-4">
+                    <h3 className="font-mono text-[10px] text-white/40 uppercase tracking-[0.4em] font-black">UI Density</h3>
+                    <div className="flex gap-3">
+                      {["Compact", "Comfortable", "Spacious"].map((d, i) => (
+                        <button
+                          key={d}
+                          className={cn(
+                            "flex-1 py-3 border-4 font-mono font-black text-xs uppercase transition-all",
+                            i === 1
+                              ? "bg-primary text-black border-black shadow-hard-xs"
+                              : "bg-black/20 text-white/40 border-white/10 hover:border-white/30",
+                          )}
+                        >
+                          {d}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-4">
+                  <button className="bg-primary text-black border-4 border-black px-10 py-4 font-display font-black uppercase text-xl italic shadow-hard hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
+                    Save Appearance
                   </button>
                 </div>
               </section>

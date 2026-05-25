@@ -2,7 +2,13 @@ export interface RenderJob {
   id: string;
   userId: string;
   projectId: string;
-  status: "pending" | "processing" | "completed" | "failed" | "cancelled";
+  status:
+    | "queued"
+    | "pending"
+    | "processing"
+    | "completed"
+    | "failed"
+    | "cancelled";
   progress: number;
   outputUrl?: string;
   error?: {

@@ -1,1 +1,1 @@
-export { renderJobRepository } from "@utsukushii/database/repositories/RenderJobRepository";
+export { renderJobRepository } from "@utsukushii/database";

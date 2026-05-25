@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { storageService, projectService } from "../services";
+import { AppError } from "../errors";
 import { generateId } from "../utils";
 
 export const uploadFile = async (
@@ -17,6 +18,10 @@ export const uploadFile = async (
         status: "error",
         message: "file is required",
       });
+    }
+
+    if (!projectId) {
+      throw new AppError("projectId is required", 422, "MISSING_PROJECT_ID");
     }
 
     await projectService.getProject(userId, projectId);
@@ -98,6 +103,10 @@ export const confirmUpload = async (
       mimeType,
       size,
     } = req.body;
+
+    if (!projectId) {
+      throw new AppError("projectId is required", 422, "MISSING_PROJECT_ID");
+    }
 
     if (type === "manga") {
       const chapter = {

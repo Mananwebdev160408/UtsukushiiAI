@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { User } from "@utsukushii/database/models/User";
+import { User } from "@utsukushii/database";
 import { config } from "../../config";
 import { hashPassword } from "../../utils/password";
 import { logger } from "../../utils/logger";

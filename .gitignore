@@ -75,3 +75,7 @@ pnpm-debug.log*
 Thumbs.db
 *.swp
 *.swo
+.agents/
+AGENT_FIX_STEPS.txt
+integration_checklist.md
+skills-lock.json

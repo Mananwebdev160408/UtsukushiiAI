@@ -1,5 +1,6 @@
 import { Server as SocketServer, Socket } from "socket.io";
 import { Server as HttpServer } from "http";
+import { AppError } from "../errors";
 import { verifyAccessToken } from "../utils/jwt";
 import { logger } from "../utils/logger";
 import { config } from "../config";
@@ -51,7 +52,7 @@ export const initWebSocket = (server: HttpServer) => {
 
 export const getIO = (): SocketServer => {
   if (!io) {
-    throw new Error("Socket.io not initialized!");
+    throw new AppError("Socket.io not initialized", 500, "SOCKET_NOT_INITIALIZED");
   }
   return io;
 };

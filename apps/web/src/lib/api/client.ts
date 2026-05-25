@@ -1,11 +1,4 @@
-/**
- * Simulated API Client for UtsukushiiAI
- * Provides fake async calls with console logging for development.
- */
-
-const DELAY = 800;
-
-
+import type { Project, ProjectStatus, User } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
@@ -48,26 +41,65 @@ const persistAuth = (user: any, tokens: { accessToken: string; refreshToken: str
 const clearAuth = () => {
   if (typeof window === 'undefined') return;
   window.localStorage.removeItem('utsukushii-auth');
+  // Clear session cookie for middleware
+  document.cookie = 'utsukushii-session=; Max-Age=0; path=/';
+};
+
+const setSessionCookie = () => {
+  if (typeof window === 'undefined') return;
+  // Signal for Next.js edge middleware — expires in 7 days
+  const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
+  document.cookie = `utsukushii-session=1; expires=${expires}; path=/; SameSite=Lax`;
+};
+
+const parseResponseBody = async (response: Response) => {
+  const text = await response.text();
+  if (!text) return {};
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { message: text };
+  }
+};
+
+const getErrorMessage = (body: any, fallback: string) => {
+  if (!body) return fallback;
+  if (typeof body === 'string' && body.trim()) return body;
+  if (typeof body.message === 'string' && body.message.trim()) return body.message;
+  if (typeof body.error === 'string' && body.error.trim()) return body.error;
+  if (typeof body.error?.message === 'string' && body.error.message.trim()) {
+    return body.error.message;
+  }
+  return fallback;
 };
 
 const request = async <T>(path: string, init?: RequestInit): Promise<BackendResponse<T>> => {
-  const token = getAccessToken();
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers: {
-      ...(init?.headers || {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  });
+  try {
+    const token = getAccessToken();
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      headers: {
+        ...(init?.headers || {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
 
-  const text = await response.text();
-  const body = text ? JSON.parse(text) : {};
+    const body = await parseResponseBody(response);
 
-  if (!response.ok) {
-    throw new Error(body?.message || `Request failed: ${response.status}`);
+    if (!response.ok) {
+      throw new Error(
+        getErrorMessage(body, `Request failed: ${response.status}`),
+      );
+    }
+
+    return body;
+  } catch (error: any) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Network request failed');
   }
-
-  return body;
 };
 
 const ANIME_AVATARS = [
@@ -83,7 +115,7 @@ const getCharacterAvatar = (seed: string) => {
   return ANIME_AVATARS[hash % ANIME_AVATARS.length];
 };
 
-const mapUser = (user: any) => {
+const mapUser = (user: any): User | null => {
   if (!user) return null;
   const name = user.displayName || user.name || user.username || (user.email ? user.email.split('@')[0] : 'Utsukushii User');
   return {
@@ -96,14 +128,20 @@ const mapUser = (user: any) => {
   };
 };
 
-const mapProjectStatus = (status?: string) => {
+const mapProjectStatus = (status?: string): ProjectStatus => {
   switch (status) {
     case 'ready':
-      return 'completed';
+      return 'completed' as ProjectStatus;
     case 'draft':
-      return 'idle';
+      return 'idle' as ProjectStatus;
+    case 'processing':
+    case 'rendering':
+    case 'completed':
+    case 'error':
+    case 'idle':
+      return status;
     default:
-      return status || 'idle';
+      return 'idle';
   }
 };
 
@@ -112,7 +150,7 @@ const parseResolution = (resolution?: string) => {
   return { width: width || 1080, height: height || 1920 };
 };
 
-const mapProject = (project: any) => {
+const mapProject = (project: any): Project => {
   const resolution = parseResolution(project?.settings?.resolution);
   return {
     id: project._id || project.id,
@@ -171,12 +209,16 @@ export const api = {
 
       const data = response.data || {};
       const user = mapUser(data.user);
+      if (!user) {
+        throw new Error('Login response is missing user data');
+      }
       const tokens = {
         accessToken: data.accessToken,
         refreshToken: data.refreshToken,
       };
 
       persistAuth(user, tokens);
+      setSessionCookie();
 
       return {
         success: true,
@@ -189,16 +231,22 @@ export const api = {
       };
     },
     register: async (userData: { name: string; email: string; password: string }) => {
-      const baseUsername = userData.name
+      let baseUsername = userData.name
         .trim()
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '_')
         .replace(/^_+|_+$/g, '');
 
+      // Ensure username is at least 3 chars for backend validation
+      if (baseUsername.length < 3) {
+        const suffix = Math.random().toString(36).substring(2, 6);
+        baseUsername = (baseUsername ? `${baseUsername}_${suffix}` : `user_${suffix}`).slice(0, 30);
+      }
+
       const payload = {
         email: userData.email,
         password: userData.password,
-        username: baseUsername || `user_${Date.now()}`,
+        username: baseUsername,
         displayName: userData.name,
       };
 
@@ -210,12 +258,16 @@ export const api = {
 
       const data = response.data || {};
       const user = mapUser(data.user);
+      if (!user) {
+        throw new Error('Registration response is missing user data');
+      }
       const tokens = {
         accessToken: data.accessToken,
         refreshToken: data.refreshToken,
       };
 
       persistAuth(user, tokens);
+      setSessionCookie();
 
       return {
         success: true,
@@ -230,9 +282,13 @@ export const api = {
     me: async () => {
       const response = await request<any>('/v1/auth/me');
       const userData = response.data?.user || response.data;
+      const user = mapUser(userData);
+      if (!user) {
+        throw new Error('Unable to load current user profile');
+      }
       return {
         success: true,
-        data: mapUser(userData),
+        data: user,
       };
     },
     logout: async () => {
@@ -292,6 +348,87 @@ export const api = {
       await request(`/v1/projects/${id}`, { method: 'DELETE' });
       return { success: true };
     },
+    panels: {
+      list: async (projectId: string) => {
+        const response = await request<any>(`/v1/projects/${projectId}/panels`);
+        return { success: true, data: response.data?.panels || [] };
+      },
+      create: async (projectId: string, panelData: any) => {
+        const response = await request<any>(`/v1/projects/${projectId}/panels`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(panelData),
+        });
+        return { success: true, data: response.data?.panel };
+      },
+      update: async (projectId: string, panelId: string, updates: any) => {
+        const response = await request<any>(`/v1/projects/${projectId}/panels/${panelId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updates),
+        });
+        return { success: true, data: response.data?.panel };
+      },
+      remove: async (projectId: string, panelId: string) => {
+        await request(`/v1/projects/${projectId}/panels/${panelId}`, { method: 'DELETE' });
+        return { success: true };
+      },
+      reorder: async (projectId: string, orders: any[]) => {
+        const response = await request<any>(`/v1/projects/${projectId}/panels/reorder`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orders }),
+        });
+        return { success: true, data: response.data };
+      },
+      detect: async (projectId: string, opts?: any) => {
+        const response = await request<any>(`/v1/projects/${projectId}/detect`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(opts || {}),
+        });
+        return { success: true, data: response.data };
+      },
+    },
+  },
+  render: {
+    start: async (payload: { projectId: string; settings?: any }) => {
+      const response = await request<any>('/v1/render/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      return {
+        success: true,
+        data: response.data?.job || response.data,
+      };
+    },
+    status: async (jobId: string) => {
+      const response = await request<any>(`/v1/render/${jobId}`);
+      return {
+        success: true,
+        data: response.data?.job || response.data,
+      };
+    },
+    cancel: async (jobId: string) => {
+      await request(`/v1/render/${jobId}`, { method: 'DELETE' });
+      return { success: true };
+    },
+  },
+  ml: {
+    suggestMusic: async (mangaPath: string) => {
+      const response = await request<any>('/v1/ml/suggest/music', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mangaPath }),
+      });
+
+      return {
+        success: true,
+        data: response.data,
+      };
+    },
   },
   assets: {
     upload: async (
@@ -321,11 +458,10 @@ export const api = {
         body: formData,
       });
 
-      const text = await response.text();
-      const body = text ? JSON.parse(text) : {};
+      const body = await parseResponseBody(response);
 
       if (!response.ok) {
-        throw new Error(body?.message || `Upload failed: ${response.status}`);
+        throw new Error(getErrorMessage(body, `Upload failed: ${response.status}`));
       }
 
       return {

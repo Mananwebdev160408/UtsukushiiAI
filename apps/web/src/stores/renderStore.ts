@@ -51,7 +51,13 @@ export const useRenderStore = create<RenderState>()((set) => ({
   updateJobProgress: (progress, stage, message) =>
     set((s) => ({
       currentJob: s.currentJob
-        ? { ...s.currentJob, progress, currentStage: stage, message, status: 'processing' }
+        ? {
+            ...s.currentJob,
+            progress,
+            currentStage: stage,
+            message,
+            status: stage === 'queued' ? 'queued' : 'processing',
+          }
         : null,
     })),
   completeJob: (resultUrl, durationSeconds, fileSizeBytes) =>

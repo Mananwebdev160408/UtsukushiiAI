@@ -20,8 +20,15 @@ const RenderJobSchema = new Schema<IRenderJob>(
     projectId: { type: String, required: true, ref: "Project" },
     status: {
       type: String,
-      enum: ["pending", "processing", "completed", "failed", "cancelled"],
-      default: "pending",
+      enum: [
+        "queued",
+        "pending",
+        "processing",
+        "completed",
+        "failed",
+        "cancelled",
+      ],
+      default: "queued",
     },
     progress: { type: Number, default: 0 },
     outputUrl: { type: String },

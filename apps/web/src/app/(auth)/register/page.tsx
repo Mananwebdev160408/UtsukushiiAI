@@ -8,6 +8,7 @@ import { api } from "@/lib/api/client";
 
 export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -15,14 +16,16 @@ export default function RegisterPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
     try {
       const res = await api.auth.register({ name, email, password });
       if (res.success) {
         console.log("REGISTER_SUCCESS: Redirecting to projects...");
         window.location.href = "/projects";
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("REGISTER_ERROR:", err);
+      setError(err.message || "An unexpected error occurred during registration.");
     } finally {
       setLoading(false);
     }
@@ -41,6 +44,12 @@ export default function RegisterPage() {
       </div>
 
       <form className="space-y-6" onSubmit={handleRegister}>
+        {error && (
+          <div className="bg-red-500/10 border-2 border-red-500/20 p-4 neo-shadow text-red-500 text-xs font-bold uppercase tracking-widest flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            {error}
+          </div>
+        )}
         <div className="space-y-4">
           <div className="relative group">
             <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none group-focus-within:text-primary transition-colors">
@@ -50,7 +59,10 @@ export default function RegisterPage() {
               type="text"
               placeholder="FULL_NAME"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                setError(null);
+              }}
               className="w-full bg-white/5 border-2 border-white/10 px-12 py-4 text-white font-bold uppercase placeholder:text-white/10 outline-none focus:border-primary focus:bg-white/10 transition-all"
             />
           </div>
@@ -63,7 +75,10 @@ export default function RegisterPage() {
               type="email"
               placeholder="EMAIL_ADDRESS"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setError(null);
+              }}
               className="w-full bg-white/5 border-2 border-white/10 px-12 py-4 text-white font-bold uppercase placeholder:text-white/10 outline-none focus:border-primary focus:bg-white/10 transition-all"
             />
           </div>
@@ -76,7 +91,10 @@ export default function RegisterPage() {
               type="password"
               placeholder="CREATE_PASSWORD"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setError(null);
+              }}
               className="w-full bg-white/5 border-2 border-white/10 px-12 py-4 text-white font-bold uppercase placeholder:text-white/10 outline-none focus:border-primary focus:bg-white/10 transition-all"
             />
           </div>

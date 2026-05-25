@@ -3,6 +3,7 @@ import authRoutes from "./authRoutes";
 import projectRoutes from "./projectRoutes";
 import panelRoutes from "./panelRoutes";
 import renderRoutes from "./renderRoutes";
+import mlRoutes from "./mlRoutes";
 import uploadRoutes from "./uploadRoutes";
 import youtubeRoutes from "./youtubeRoutes";
 import webhookRoutes from "./webhookRoutes";
@@ -13,6 +14,7 @@ router.use("/auth", authRoutes);
 router.use("/projects", projectRoutes);
 router.use("/projects", panelRoutes); // Nested routes
 router.use("/render", renderRoutes);
+router.use("/ml", mlRoutes);
 router.use("/upload", uploadRoutes);
 router.use("/youtube", youtubeRoutes);
 router.use("/webhooks", webhookRoutes);

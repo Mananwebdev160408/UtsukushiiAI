@@ -133,3 +133,8 @@ export const youtubeDownloadSchema = z.object({
   url: z.string().url("Invalid YouTube URL"),
   projectId: z.string().min(1),
 });
+
+// Detect options
+export const detectOptionsSchema = z.object({
+  confidence: z.number().min(0).max(1).optional(),
+});

@@ -38,6 +38,16 @@
       transform: translateX(-100%);
     }
   }
+
+  @keyframes shimmer {
+    100% {
+      transform: translateX(200%);
+    }
+  }
+
+  --shadow-hard-xs: 2px 2px 0px 0px #000000;
+  --color-accent: #00ccff;
+  --color-background-dark: #0a0a0a;
 }
 
 :root {

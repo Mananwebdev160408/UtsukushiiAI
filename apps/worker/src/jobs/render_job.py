@@ -156,6 +156,7 @@ class RenderJob:
         self.error: Optional[str] = None
         self.started_at: Optional[float] = None
         self.completed_at: Optional[float] = None
+        self._last_webhook_progress: float = -1.0
 
         self._redis_reporter = RedisProgressReporter()
         self._webhook = WebhookNotifier()
@@ -187,6 +188,16 @@ class RenderJob:
                         asyncio.create_task(
                             self._redis_reporter.publish_progress(self.project_id, prog, msg)
                         )
+                        # Throttle webhook progress updates to avoid excessive callback traffic.
+                        if prog >= 100 or (prog - self._last_webhook_progress) >= 5:
+                            self._last_webhook_progress = prog
+                            asyncio.create_task(
+                                self._webhook.notify(
+                                    self.project_id,
+                                    "processing",
+                                    {"progress": float(prog)},
+                                )
+                            )
                 except Exception:
                     pass
 

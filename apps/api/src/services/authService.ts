@@ -9,6 +9,7 @@ import {
   TokenPayload,
   generateId,
 } from "../utils";
+import { logger } from "../utils/logger";
 import { config } from "../config";
 
 export class AuthService {
@@ -21,11 +22,14 @@ export class AuthService {
     if (existingUsername) throw new ConflictError("Username is already taken");
 
     const hashedPassword = await hashPassword(data.password);
-    const user = await userRepository.create({
+    const userPayload = {
       _id: generateId("usr"),
       ...data,
       password: hashedPassword,
-    });
+    };
+
+    const user = await userRepository.create(userPayload);
+    logger.info(`USER_CREATED: ${user._id} (${user.email}, ${user.username})`);
 
     const payload: TokenPayload = {
       userId: user._id,

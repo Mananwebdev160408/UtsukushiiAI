@@ -22,7 +22,9 @@ export class RenderJobRepository extends BaseRepository<IRenderJob> {
   }
 
   async findActiveJobs(): Promise<IRenderJob[]> {
-    return this.model.find({ status: { $in: ["pending", "processing"] } });
+    return this.model.find({
+      status: { $in: ["queued", "pending", "processing"] },
+    });
   }
 
   async updateStatus(
