@@ -151,7 +151,8 @@ class RenderPipeline:
             self._check_cancelled()
             self._update_progress(metadata, progress_callback, 12.0, PipelineStage.PANEL_DETECTION, "Detecting panels...")
 
-            manga_img = Image.open(manga_path).convert("RGB")
+            # Load manga image. Support PDFs by converting first page to an image
+            manga_img = self._load_manga_image(manga_path)
             detections = self.detector.detect(manga_img)
 
             if not detections:
@@ -322,7 +323,7 @@ class RenderPipeline:
 
     async def suggest_music(self, manga_path: str) -> MusicSuggestion:
         """Analyzes a manga page and suggests music."""
-        manga_img = Image.open(manga_path).convert("RGB")
+        manga_img = self._load_manga_image(manga_path)
 
         # Detect panels first
         detections = self.detector.detect(manga_img)
@@ -339,6 +340,35 @@ class RenderPipeline:
 
         clear_cache()
         return self.music_suggester.analyze_panels(panel_images)
+
+    def _load_manga_image(self, path: str) -> Image:
+        """Loads a manga page into a PIL Image.
+
+        - If the path is a PDF, convert the first page to an image using pdf2image.
+        - Raises a helpful RuntimeError if pdf2image is not installed or conversion fails.
+        """
+        ext = os.path.splitext(path)[1].lower()
+        if ext == ".pdf":
+            try:
+                from pdf2image import convert_from_path
+            except Exception as exc:
+                raise RuntimeError(
+                    "pdf2image is required to read PDF files. Install with 'pip install pdf2image' and ensure poppler is installed and on PATH."
+                ) from exc
+            try:
+                pages = convert_from_path(path, first_page=1, last_page=1)
+                if not pages:
+                    raise RuntimeError("pdf2image returned no pages when converting PDF")
+                return pages[0].convert("RGB")
+            except Exception as e:
+                raise RuntimeError(f"Failed to convert PDF to image: {e}") from e
+
+        # Fallback: let Pillow open the file (will raise if unsupported)
+        try:
+            return Image.open(path).convert("RGB")
+        except Exception:
+            # Re-raise with extra context
+            raise
 
     # ── Helpers ─────────────────────────────────────────────────────
 

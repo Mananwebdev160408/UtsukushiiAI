@@ -14,6 +14,7 @@ import {
   Edit3,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { cn } from "@/lib/utils/cn";
@@ -23,6 +24,7 @@ import { useRender } from "@/hooks/useRender";
 export default function ExportResultPage() {
   const params = useParams();
   const projectId = String(params.id || "");
+  const searchParams = useSearchParams();
   const { currentJob, submitRender, cancelRender, suggestMusic } = useRender(projectId);
   const [progress, setProgress] = useState(0);
   const [project, setProject] = useState<any>(null);
@@ -49,6 +51,15 @@ export default function ExportResultPage() {
     };
 
     loadProject();
+
+    // If autoStart query param present, trigger start when project loads
+    const autoStart = searchParams?.get?.("autoStart");
+    if (autoStart === "1") {
+      // small delay to allow project state to initialize
+      setTimeout(() => {
+        handleStartRender();
+      }, 300);
+    }
 
     return () => {
       active = false;

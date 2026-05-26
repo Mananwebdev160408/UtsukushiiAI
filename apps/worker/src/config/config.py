@@ -1,6 +1,7 @@
 """Worker Configuration — Centralized settings from environment variables."""
 
 from pydantic_settings import BaseSettings
+from pydantic import model_validator
 import os
 
 
@@ -10,8 +11,8 @@ class Settings(BaseSettings):
     WORKER_NAME: str = "utsukushiiai-ml-worker"
     WORKER_CONCURRENCY: int = 2
 
-    # Device
-    DEVICE: str = "cuda"  # cuda, cpu, mps
+    # Device — can be overridden via DEVICE env var; auto-detected if set to "auto"
+    DEVICE: str = "auto"
 
     # Paths
     MODEL_CACHE_DIR: str = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "models")
@@ -28,6 +29,24 @@ class Settings(BaseSettings):
 
     # Logging
     LOG_LEVEL: str = "INFO"
+
+    @model_validator(mode="after")
+    def resolve_device(self) -> "Settings":
+        """Auto-detect the best device if DEVICE is 'auto' or 'cuda' but CUDA is unavailable."""
+        if self.DEVICE in ("auto", "cuda"):
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    self.DEVICE = "cuda"
+                elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+                    self.DEVICE = "mps"
+                else:
+                    self.DEVICE = "cpu"
+            except ImportError:
+                # torch not available yet — keep explicit value or fall back to cpu
+                if self.DEVICE == "auto":
+                    self.DEVICE = "cpu"
+        return self
 
     class Config:
         env_file = ".env"

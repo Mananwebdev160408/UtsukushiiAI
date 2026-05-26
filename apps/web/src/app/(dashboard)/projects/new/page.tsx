@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Zap,
   ArrowLeft,
@@ -63,6 +64,13 @@ export default function NewProjectPage() {
     return res.data.id;
   }, [projectId, projectName]);
 
+  // If a projectId was provided in the query (e.g. from Projects page), honor it
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const pid = searchParams?.get?.("projectId");
+    if (pid) setProjectId(pid);
+  }, [searchParams]);
+
   const handleStartForge = async () => {
     setLoading(true);
     setStep(5);
@@ -82,7 +90,8 @@ export default function NewProjectPage() {
         title: projectName,
       });
       if (res.success) {
-        window.location.href = `/projects/${id}`;
+        // Redirect user to the render page and auto-start the render
+        window.location.href = `/projects/${id}/render?autoStart=1`;
       }
     } catch (err) {
       console.error("CREATE_PROJECT_ERROR:", err);

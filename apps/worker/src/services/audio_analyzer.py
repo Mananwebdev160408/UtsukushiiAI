@@ -24,17 +24,68 @@ class AudioAnalyzer:
 
         try:
             logger.info(f"Analyzing audio: {audio_path}")
-            y, sr = librosa.load(audio_path, sr=self.sample_rate)
+            # Primary attempt: let librosa load directly (uses soundfile/audioread backends)
+            try:
+                y, sr = librosa.load(audio_path, sr=self.sample_rate)
+            except Exception as load_err:
+                logger.warning(f"librosa.load failed, will attempt ffmpeg/pydub fallback: {load_err}")
+                # Fallback: try to convert to wav via pydub (requires ffmpeg) and re-load
+                try:
+                    from pydub import AudioSegment
+                    import tempfile
+
+                    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+                        tmp_path = tmp.name
+                    # pydub will use ffmpeg/avlib installed on system
+                    audio = AudioSegment.from_file(audio_path)
+                    audio.export(tmp_path, format="wav")
+                    y, sr = librosa.load(tmp_path, sr=self.sample_rate)
+                    try:
+                        os.remove(tmp_path)
+                    except Exception:
+                        pass
+                except Exception as fb_err:
+                    logger.error(f"Fallback audio conversion failed: {fb_err}")
+                    raise load_err
+
+            # Defensive: ensure we have audio samples
+            if y is None or (hasattr(y, "size") and getattr(y, "size") == 0) or len(y) == 0:
+                raise ValueError("Loaded audio is empty")
             duration = librosa.get_duration(y=y, sr=sr)
 
-            # 1. BPM and Beat Tracking
-            tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
-            beat_times = librosa.frames_to_time(beat_frames, sr=sr)
+            # 1. BPM and Beat Tracking (defensive)
+            try:
+                tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
+                beat_times = librosa.frames_to_time(beat_frames, sr=sr)
+            except Exception as be_err:
+                logger.warning(f"Beat tracking failed, continuing without beats: {be_err}")
+                tempo = 0.0
+                beat_frames = np.array([])
+                beat_times = np.array([])
 
-            # 2. Onset Detection (transients/hits)
-            onset_env = librosa.onset.onset_strength(y=y, sr=sr)
-            onset_frames = librosa.onset.onset_detect(onset_env=onset_env, sr=sr)
-            onset_times = librosa.frames_to_time(onset_frames, sr=sr)
+            # 2. Onset Detection (transients/hits) — guard against empty onset envelopes
+            onset_env = None
+            try:
+                onset_env = librosa.onset.onset_strength(y=y, sr=sr)
+            except Exception as oe_err:
+                logger.warning(f"Failed to compute onset envelope: {oe_err}")
+
+            onset_frames = np.array([])
+            onset_times = np.array([])
+            try:
+                if onset_env is not None and getattr(onset_env, 'size', len(onset_env)) > 0:
+                    try:
+                        onset_frames = librosa.onset.onset_detect(onset_env=onset_env, sr=sr)
+                        onset_times = librosa.frames_to_time(onset_frames, sr=sr)
+                    except Exception as od_err:
+                        logger.warning(f"onset_detect failed, continuing with empty onsets: {od_err}")
+                        onset_frames = np.array([])
+                        onset_times = np.array([])
+                else:
+                    logger.warning("onset envelope empty — skipping onset detection")
+            except Exception:
+                onset_frames = np.array([])
+                onset_times = np.array([])
 
             # 3. Harmonic/Percussive separation
             y_harmonic, y_percussive = librosa.effects.hpss(y)

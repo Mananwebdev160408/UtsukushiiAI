@@ -23,7 +23,8 @@ class RedisProgressReporter:
     def __init__(self):
         self._redis = None
 
-    async def _get_redis(self):
+    async def connect(self):
+        """Eagerly connect to Redis so the connection is live before the job starts."""
         if self._redis is None:
             try:
                 import redis.asyncio as aioredis
@@ -33,6 +34,10 @@ class RedisProgressReporter:
             except Exception as e:
                 logger.warning(f"Redis not available for progress reporting: {e}")
                 self._redis = None
+
+    async def _get_redis(self):
+        if self._redis is None:
+            await self.connect()
         return self._redis
 
     async def publish_progress(self, project_id: str, progress: float, message: str, stage: str = ""):
@@ -118,19 +123,26 @@ class WebhookNotifier:
         self.api_url = api_url or os.getenv("API_WEBHOOK_URL", "http://localhost:4000/v1/webhooks/render")
 
     async def notify(self, project_id: str, status: str, data: Dict[str, Any] = None):
+        """Send webhook using requests (runs in a thread to avoid blocking the event loop)."""
+        import asyncio
+        import json
+        payload = {
+            "project_id": project_id,
+            "status": status,
+            **(data or {}),
+        }
         try:
-            import aiohttp
-            payload = {
-                "project_id": project_id,
-                "status": status,
-                **(data or {}),
-            }
-            async with aiohttp.ClientSession() as session:
-                async with session.post(self.api_url, json=payload, timeout=aiohttp.ClientTimeout(total=10)):
-                    pass
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(
+                None,
+                lambda: __import__("requests").post(
+                    self.api_url,
+                    json=payload,
+                    timeout=10,
+                    headers={"Content-Type": "application/json"},
+                ),
+            )
             logger.debug(f"Webhook sent: {status} for {project_id}")
-        except ImportError:
-            logger.debug("aiohttp not available for webhooks, skipping")
         except Exception as e:
             logger.debug(f"Webhook failed (non-critical): {e}")
 
@@ -164,6 +176,10 @@ class RenderJob:
     async def run(self):
         """Runs the render job asynchronously."""
         self.started_at = time.time()
+
+        # Pre-connect Redis eagerly — must happen before pipeline starts so completion
+        # events are never lost due to a lazy-connection race condition.
+        await self._redis_reporter.connect()
 
         try:
             self.status = JobStatus.PROCESSING

@@ -16,22 +16,36 @@ class YOLODetector:
         
         self.device = device or settings.DEVICE
         
-        # Check if model exists, if not, we'll need a way to download it or use a default
+        # Check if model exists; skip loading entirely if weights are missing
         if not os.path.exists(model_path):
-            logger.warning(f"Model file not found at {model_path}. Please ensure weights are provisioned.")
-            # For now, we'll try to load it anyway, which might fallback to HF download depending on ultralytics version
-            # But in production we should have it local.
-        
+            logger.warning(
+                f"Model file not found at {model_path}. "
+                "Panel detection will fall back to full-page mode until weights are provisioned."
+            )
+            self.model = None
+            self.model_loaded = False
+            return
+
         try:
             self.model = YOLO(model_path)
             self.model.to(self.device)
+            self.model_loaded = True
             logger.info(f"YOLOv12 Detector initialized on {self.device} using model: {model_path}")
         except Exception as e:
             logger.error(f"Failed to load YOLO model: {e}")
-            raise
+            # Mark as not loaded and continue; detection will fallback to full-page
+            self.model = None
+            self.model_loaded = False
 
     def detect(self, image: Image.Image, conf_threshold: float = 0.5) -> List[DetectionResult]:
         """Detect panels in a manga page."""
+        # If model failed to load, fall back to a single full-page detection
+        if not getattr(self, "model_loaded", False) or self.model is None:
+            logger.warning("YOLO model not available, falling back to full-page detection")
+            img_width, img_height = image.size
+            bbox = BBox(x=0.0, y=0.0, width=1.0, height=1.0)
+            return [DetectionResult(bbox=bbox, confidence=1.0, class_id=0, label="full_page")]
+
         try:
             results = self.model.predict(
                 image,
@@ -75,7 +89,6 @@ class YOLODetector:
 
             logger.info(f"Detected {len(detections)} panels")
             return detections
-            
         except Exception as e:
             logger.error(f"Detection failed: {e}")
             return []

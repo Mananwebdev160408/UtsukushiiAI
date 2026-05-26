@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   Plus,
   Search,
@@ -483,6 +484,14 @@ export default function ProjectsPage() {
     setProjects((prev) => [project, ...prev]);
   };
 
+  // After creating a project from the modal, send user to the Forge upload flow
+  const router = useRouter();
+  const handleProjectCreatedAndOpenForge = (project: Project) => {
+    setProjects((prev) => [project, ...prev]);
+    // Navigate to the new project uploader with projectId as query
+    router.push(`/projects/new?projectId=${project.id}`);
+  };
+
   const toggleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -837,7 +846,7 @@ export default function ProjectsPage() {
       <NewProjectModal
         open={showNewModal}
         onClose={() => setShowNewModal(false)}
-        onCreated={handleProjectCreated}
+        onCreated={handleProjectCreatedAndOpenForge}
       />
       <RenameModal
         project={renameTarget}

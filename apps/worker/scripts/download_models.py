@@ -41,10 +41,14 @@ MODELS = {
     },
     "midas": {
         "name": "MiDaS v3 DPT-Large (Depth Estimation)",
-        "repo": "intel/dpt-large",
-        "files": [],  # Download entire repo for config files
+        "repo": "Intel/dpt-large",
+        "files": [],  # Download entire repo snapshot (config + weights)
         "local_dir": os.path.join(MODELS_DIR, "midas"),
         "snapshot": True,
+        "notes": (
+            "Downloads Intel DPT-Large via HuggingFace transformers (~1.3GB). "
+            "Required for parallax/wiggle depth animation effects."
+        ),
     },
     "svd": {
         "name": "Stable Video Diffusion (Image-to-Video)",

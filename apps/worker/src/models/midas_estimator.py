@@ -4,37 +4,54 @@ from PIL import Image
 import logging
 import os
 from typing import Dict, List, Tuple
-from torchvision.transforms import Compose, Resize, ToTensor, Normalize
 from config.config import settings
 from utils.device import autocast_context, gpu_memory_guard, clear_cache
 
 logger = logging.getLogger(__name__)
 
+# MiDaS model dir — populated by running:
+#   python scripts/download_models.py --models midas
+_MIDAS_MODEL_DIR = os.path.join(settings.MODEL_CACHE_DIR, "midas")
+
 
 class MiDaSEstimator:
+    """
+    Depth estimator backed by Intel DPT-Large (MiDaS v3).
+
+    The model is loaded from a local HuggingFace snapshot directory
+    (``models/midas/``) via the ``transformers`` library.  If the directory
+    is absent or the package is unavailable the estimator returns a flat
+    128-value depth map so the rest of the pipeline still works.
+    """
+
     def __init__(self, model_path: str = None, device: str = None):
-        if model_path is None:
-            model_path = os.path.join(settings.MODEL_CACHE_DIR, "midas", "dpt_large-v3.pt")
-
+        # model_path kept for API compatibility but we use the snapshot dir
         self.device = device or settings.DEVICE
-        self.model_path = model_path
+        self.model_path = model_path or _MIDAS_MODEL_DIR
+        self.model = None
+        self.processor = None
 
-        if not os.path.exists(model_path):
-            logger.warning(f"MiDaS model not found at {model_path}. Please run download_models.py.")
-            self.model = None
+        if not os.path.isdir(_MIDAS_MODEL_DIR) or not os.listdir(_MIDAS_MODEL_DIR):
+            logger.warning(
+                f"MiDaS model not found at {_MIDAS_MODEL_DIR}. "
+                "Run: python scripts/download_models.py --models midas"
+            )
             return
 
         try:
-            self.model = torch.jit.load(model_path, map_location=self.device)
+            from transformers import DPTForDepthEstimation, DPTImageProcessor
+
+            self.processor = DPTImageProcessor.from_pretrained(_MIDAS_MODEL_DIR)
+            self.model = DPTForDepthEstimation.from_pretrained(_MIDAS_MODEL_DIR)
             self.model.eval()
             self.model.to(self.device)
-            logger.info(f"MiDaS v3 Estimator initialized on {self.device} using model: {model_path}")
-
-            self.transform = Compose([
-                Resize((384, 384)),
-                ToTensor(),
-                Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-            ])
+            logger.info(
+                f"MiDaS (DPT-Large) initialized on {self.device} "
+                f"from {_MIDAS_MODEL_DIR}"
+            )
+        except ImportError:
+            logger.warning("transformers package not available — MiDaS depth estimation disabled.")
+            self.model = None
         except Exception as e:
             logger.error(f"Failed to load MiDaS model: {e}")
             self.model = None
@@ -44,24 +61,28 @@ class MiDaSEstimator:
         Generates a depth map for the given image.
         Returns a normalized numpy array (H, W) where 0 is far and 255 is near.
         """
-        if self.model is None:
+        if self.model is None or self.processor is None:
             logger.warning("MiDaS model not initialized, returning flat depth map.")
             return np.full((image.height, image.width), 128, dtype=np.uint8)
 
         try:
-            input_tensor = self.transform(image).unsqueeze(0).to(self.device)
+            rgb_image = image.convert("RGB")
+            inputs = self.processor(images=rgb_image, return_tensors="pt")
+            inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
             with gpu_memory_guard():
                 with autocast_context(self.device):
                     with torch.no_grad():
-                        prediction = self.model(input_tensor)
+                        outputs = self.model(**inputs)
+                        predicted_depth = outputs.predicted_depth  # (1, H', W')
 
-                        prediction = torch.nn.functional.interpolate(
-                            prediction.unsqueeze(1),
-                            size=(image.height, image.width),
-                            mode="bicubic",
-                            align_corners=False,
-                        ).squeeze()
+            # Upsample to original image size
+            prediction = torch.nn.functional.interpolate(
+                predicted_depth.unsqueeze(1),
+                size=(image.height, image.width),
+                mode="bicubic",
+                align_corners=False,
+            ).squeeze()
 
             depth = prediction.cpu().numpy()
             depth_min, depth_max = depth.min(), depth.max()
